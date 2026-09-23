@@ -1,0 +1,13 @@
+# Build and coverage output
+dist
+coverage
+package-lock.json
+
+# Reference material saved into the project folder, not source we own.
+# Prettier would otherwise report every asset of a saved web page.
+System Design Document.html
+System Design Document_files
+
+# Printed deliverable — authored as one self-contained file with hand-tuned
+# SVG diagrams; reflowing it would fight the layout for no benefit.
+SYSTEM-DESIGN.html

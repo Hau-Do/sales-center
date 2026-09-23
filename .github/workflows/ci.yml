@@ -1,0 +1,228 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Keep Cypress's binary out of the default cache location so it can be
+  # restored independently of node_modules.
+  CYPRESS_CACHE_FOLDER: ${{ github.workspace }}/.cypress-cache
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Static analysis and unit tests, across every Node version the dependency set
+  # claims to support. Node 25 is included deliberately: it is the version the
+  # whole stack was pinned for, so it must not be the one nobody tests on.
+  # ---------------------------------------------------------------------------
+  verify:
+    name: Verify (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24', '25']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Fail if the install needed peer overrides
+        run: |
+          if grep -q '"overrides"' package.json; then
+            echo "::error::package.json gained an 'overrides' block."
+            echo "The dependency set is pinned so it installs cleanly without one — see DESIGN.md section 4.1."
+            exit 1
+          fi
+          echo "No overrides. Clean peer resolution."
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Determinism contract
+        run: npm run verify:determinism
+
+      - name: Unit and component tests, with the coverage gate
+        run: npm run test:coverage
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload coverage
+        if: always() && matrix.node == '24'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # End-to-end against a REAL production preview build, not the dev server.
+  # ---------------------------------------------------------------------------
+  e2e:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    needs: verify
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Cache the Cypress binary
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CYPRESS_CACHE_FOLDER }}
+          key: cypress-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install
+        run: npm ci
+
+      - name: Run Cypress against the preview build
+        # `e2e:ci` builds AND serves, both with VITE_E2E=1. There is deliberately
+        # no separate build step: `import.meta.env.VITE_E2E` is inlined at BUILD
+        # time, so setting the variable only on the preview server produces a
+        # bundle with the test-only surfaces compiled out — including the
+        # `data-e2e` attribute that zeroes CSS transitions. An accessibility scan
+        # then samples colours mid-animation and fails on blends nobody ever sees.
+        #
+        # VITE_E2E is also NOT gated on import.meta.env.PROD: this runs a
+        # production build, where PROD is true, so gating on PROD would make
+        # those surfaces vanish exactly here.
+        run: npm run e2e:ci
+
+      - name: Prove no spec depends on suite ordering
+        if: success()
+        run: |
+          npx start-server-and-test 'npm run preview' http://localhost:4173 \
+            'npx cypress run --spec cypress/e2e/02-lead-detail-activity.cy.ts --config baseUrl=http://localhost:4173'
+        env:
+          VITE_E2E: '1'
+
+      - name: Upload Cypress videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos
+          path: cypress/videos/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
+  # Does the suite actually CONSTRAIN the behaviour, or merely execute it?
+  # Deliberately breaks four load-bearing constants and asserts the tests notice.
+  # ---------------------------------------------------------------------------
+  mutation-sanity:
+    name: Mutation sanity
+    runs-on: ubuntu-latest
+    needs: verify
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Break the code on purpose
+        run: npm run mutation-sanity
+
+      - name: Confirm the working tree was restored
+        run: |
+          if ! git diff --quiet; then
+            echo "::error::mutation-sanity left the working tree modified."
+            git --no-pager diff --stat
+            exit 1
+          fi
+          echo "Working tree clean — every mutation was reverted."
+
+  # ---------------------------------------------------------------------------
+  # Documentation invariants. Cheap to check, and exactly the kind of thing that
+  # rots silently.
+  # ---------------------------------------------------------------------------
+  docs:
+    name: Documentation checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Markdown is formatted (tables stay aligned)
+        run: npx prettier --check "**/*.md"
+
+      - name: Every assumption id in the register is cited in code
+        run: |
+          missing=0
+          for id in $(grep -o '^### `ASM-[A-Z]*-[0-9]*`' docs/assumptions.md | grep -o 'ASM-[A-Z]*-[0-9]*'); do
+            if ! grep -rq "$id" src/; then
+              echo "::error::$id is documented in docs/assumptions.md but never cited in src/"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] && echo "All assumption ids are cited at their point of use."
+          exit $missing
+
+      - name: Every assumption id cited in code is documented
+        run: |
+          missing=0
+          for id in $(grep -rho 'ASM-[A-Z]*-[0-9]*' src/ | sort -u); do
+            if ! grep -q "$id" docs/assumptions.md; then
+              echo "::error::$id is cited in src/ but missing from docs/assumptions.md"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] && echo "No undocumented assumptions."
+          exit $missing
+
+      - name: Required deliverables are present
+        run: |
+          for f in README.md DESIGN.md CLAUDE.md AGENTS.md \
+                   docs/testing.md docs/observability.md docs/assumptions.md \
+                   docs/ai-collaboration/corrections.md \
+                   docs/ai-collaboration/verification-log.md \
+                   docs/ai-collaboration/prompts.md; do
+            [ -f "$f" ] || { echo "::error::missing $f"; exit 1; }
+          done
+          grep -q 'AI Collaboration Narrative' README.md \
+            || { echo "::error::README.md is missing its AI Collaboration Narrative section"; exit 1; }
+          echo "All required deliverables present."

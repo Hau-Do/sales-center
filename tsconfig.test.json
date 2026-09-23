@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
+    "composite": true,
+    /* Tests legitimately touch node:fs (golden fixtures) and `process`.
+       tsconfig.app.json deliberately omits these, so app code that reaches
+       for a Node API still fails to compile. */
+    "types": ["vite/client", "node", "vitest/globals"]
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.cy.ts", "src/**/*.cy.tsx"]
+}

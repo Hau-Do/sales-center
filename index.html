@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Dark first: the UA picks this before the stylesheet arrives. -->
+    <meta name="color-scheme" content="dark light" />
+    <meta
+      name="description"
+      content="Sales Center — connect every stage of the dealership sales process, from enquiry to handover."
+    />
+    <title>Sales Center</title>
+    <script>
+      // Applied before first paint so nobody ever sees a light flash.
+      //
+      // DARK IS THE PRODUCT DEFAULT: a showroom floor is dim and the tool is on
+      // screen all day, so the theme is a deliberate choice rather than an echo
+      // of the operating system. `prefers-color-scheme` is therefore NOT
+      // consulted — only an explicit choice the user made with the toggle.
+      //
+      // This must stay in agreement with readTheme() in src/app/AppShell.tsx.
+      // If the two ever disagree, the page paints one theme and React repaints
+      // the other.
+      ;(function () {
+        var theme = 'dark'
+        try {
+          var stored = localStorage.getItem('sc.theme')
+          if (stored === 'light' || stored === 'dark') theme = stored
+        } catch (_) {
+          // Storage throws in some private windows; the dark default stands.
+        }
+        document.documentElement.dataset.theme = theme
+        // Also set the UA colour scheme, so form controls, scrollbars and the
+        // canvas behind the app are dark from the very first frame — before
+        // the stylesheet has loaded.
+        document.documentElement.style.colorScheme = theme
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
