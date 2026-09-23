@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Sales Center project README" />
+    <title>Sales Center - README</title>
+    <style>
+      :root { color-scheme: dark; --bg: #10181c; --surface: #172329; --ink: #edf4f5; --muted: #aabcc0; --line: #2d4148; --brand: #35c7c5; --code: #0b1216; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      main { width: min(100% - 2rem, 1080px); margin: 0 auto; padding: 3rem 0 5rem; }
+      h1, h2, h3 { line-height: 1.2; margin: 2.4rem 0 1rem; letter-spacing: 0; }
+      h1 { font-size: clamp(2rem, 6vw, 3.25rem); margin-top: 0; }
+      h2 { border-bottom: 1px solid var(--line); padding-bottom: .55rem; font-size: 1.65rem; }
+      h3 { font-size: 1.2rem; }
+      p, li { max-width: 78ch; }
+      a { color: var(--brand); }
+      strong { color: #fff; }
+      hr { border: 0; border-top: 1px solid var(--line); margin: 2.2rem 0; }
+      code { background: var(--code); border: 1px solid var(--line); border-radius: 4px; padding: .08rem .3rem; color: #d9f4f4; font: .9em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      pre { overflow-x: auto; background: var(--code); border: 1px solid var(--line); border-radius: 7px; padding: 1rem 1.15rem; color: #d9f4f4; font: .88rem/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      pre code { border: 0; padding: 0; background: transparent; }
+      table { border-collapse: collapse; display: block; max-width: 100%; overflow-x: auto; margin: 1rem 0 1.4rem; }
+      th, td { border: 1px solid var(--line); padding: .6rem .75rem; text-align: left; vertical-align: top; white-space: normal; }
+      th { background: var(--surface); color: #fff; }
+      blockquote { margin: 1rem 0; padding-left: 1rem; border-left: 3px solid var(--brand); color: var(--muted); }
+      .lead { font-size: 1.1rem; color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Sales Center</h1>
+      <p class="lead">A lead management tool - <strong>Keyloop technical assessment, Scenario C</strong>.</p>
+      <p>Built as a <strong>frontend</strong>, with the backend mocked at the network boundary.</p>
+      <hr />
+
+      <h2>Quick start</h2>
+      <pre><code>npm ci          # installs clean: no overrides, no --legacy-peer-deps
+npm run dev     # http://localhost:5173</code></pre>
+      <p>Requires <strong>Node 20.19+, 22, 24, 25 or 26</strong>.</p>
+
+      <h3>Commands</h3>
+      <table>
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>npm run dev</code></td><td>Dev server with the mock API on <code>:5173</code></td></tr>
+          <tr><td><code>npm run build</code></td><td>Typecheck and production build</td></tr>
+          <tr><td><code>npm run preview</code></td><td>Serve the production build on <code>:4173</code></td></tr>
+          <tr><td><code>npm test</code></td><td>Unit and component tests (Vitest)</td></tr>
+          <tr><td><code>npm run test:watch</code></td><td>Watch mode</td></tr>
+          <tr><td><code>npm run test:coverage</code></td><td>With the coverage gate, including 100% on <code>src/domain/**</code></td></tr>
+          <tr><td><code>npm run e2e</code></td><td>Cypress headless against the dev server</td></tr>
+          <tr><td><code>npm run e2e:open</code></td><td>Interactive Cypress runner</td></tr>
+          <tr><td><code>npm run e2e:ci</code></td><td>Builds with <code>VITE_E2E=1</code>, then tests that build</td></tr>
+          <tr><td><code>npm run mutation-sanity</code></td><td>Break the code on purpose; assert the tests notice</td></tr>
+          <tr><td><code>npm run verify:determinism</code></td><td>Enforce the E2E determinism contract</td></tr>
+          <tr><td><code>npm run lint</code> · <code>npm run typecheck</code></td><td>ESLint flat config · <code>tsc -b</code></td></tr>
+          <tr><td><code>npm run verify</code></td><td>Everything above, in order</td></tr>
+        </tbody>
+      </table>
+      <hr />
+
+      <h2>Features Implementation</h2>
+      <h3>Part A - core requirements</h3>
+      <table>
+        <thead><tr><th>Requirement</th><th>Where</th><th>Proof</th></tr></thead>
+        <tbody>
+          <tr><td><strong>1. Lead Inbox</strong> - list all incoming leads</td><td><code>src/features/inbox/</code></td><td><code>01-lead-inbox.cy.ts</code></td></tr>
+          <tr><td><strong>2. Lead Details</strong> + chronological activity log</td><td><code>src/features/lead-detail/</code></td><td><code>02-lead-detail-activity.cy.ts</code></td></tr>
+          <tr><td><strong>3. Activity logging, persisted</strong></td><td>dialog → MSW → <code>localStorageDb</code></td><td><em>"PERSISTS … across a full page reload"</em></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Part B - enhancements</h3>
+      <table>
+        <thead><tr><th>Enhancement</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Response-target (SLA) engine measured in <strong>working minutes</strong></td><td>✅ Bank holidays, Sunday trading, both DST discontinuities</td></tr>
+          <tr><td>Pipeline <strong>state machine</strong> with guards that carry remedies</td><td>✅ All 144 stage pairs tested</td></tr>
+          <tr><td><strong>Pipeline board</strong> - keyboard-operable moves, guards with remedies</td><td>✅</td></tr>
+          <tr><td><strong>Observability</strong> - correlation ids, structured logs, Web Vitals, in-app panel</td><td>✅</td></tr>
+        </tbody>
+      </table>
+      <hr />
+
+      <h2>Automation Testing</h2>
+      <pre><code>      ╭──────────────────────────────╮
+      │  58 Cypress E2E specs        │   full journeys, zero retries
+      ╰──────────────────────────────╯
+   ╭────────────────────────────────────╮
+   │  ~180 component + integration      │   RTL through real MSW handlers
+   ╰────────────────────────────────────╯
+╭──────────────────────────────────────────╮
+│  ~760 domain unit tests                  │   pure functions, 100% covered
+╰──────────────────────────────────────────╯</code></pre>
+      <p><strong>475 unit/component tests · 58 E2E specs.</strong> Details in <strong><a href="docs/testing.md">docs/testing.md</a></strong>, including the determinism contract and how to read the artifacts.</p>
+
+      <h3>Viewing E2E results</h3>
+      <pre><code>npm run e2e          # headless; videos written for every spec
+npm run e2e:open     # interactive, with time-travel debugging</code></pre>
+      <table>
+        <thead><tr><th>Artifact</th><th>Location</th></tr></thead>
+        <tbody>
+          <tr><td>Video of every spec</td><td><code>cypress/videos/*.mp4</code></td></tr>
+          <tr><td>Screenshot at the moment of failure</td><td><code>cypress/screenshots/</code></td></tr>
+          <tr><td>Coverage HTML report</td><td><code>coverage/index.html</code></td></tr>
+          <tr><td>Accessibility violations</td><td>Printed to the terminal with element, impact and fix</td></tr>
+        </tbody>
+      </table>
+
+      <h3>There is no <code>cy.wait()</code> anywhere</h3>
+      <p>Fixed sleeps are how a suite rots into flakes. The app publishes its own quiescence signal - <code>data-app-busy</code>, driven by TanStack Query's in-flight counts - and <code>cy.settled()</code> waits on that. The ban is enforced twice: by ESLint, and by <code>scripts/check-determinism.mjs</code>, which is a grep that an inline lint comment cannot switch off. <code>retries</code> is set to <strong>0</strong>, so a flake fails the build rather than hiding.</p>
+      <hr />
+
+      <h2>Project structure</h2>
+      <pre><code>src/
+├── domain/          PURE. No React, no fetch, no ambient clock. 100% covered.
+│   ├── money.ts         integer pence; no float ever holds an amount
+│   ├── instant.ts       branded epoch-ms + the London wall-clock inverse
+│   ├── businessHours.ts opening hours, bank holidays, Sunday trading
+│   ├── sla.ts           response targets in WORKING minutes
+│   ├── pipeline.ts      stage machine; guards carry remedies
+│   └── activities.ts    timeline ordering + contradiction detection
+├── ports/           Clock · IdGenerator · Rng — the only nondeterminism
+├── data/            Db seam (memory | localStorage) + the dealership store
+├── mocks/           MSW handlers, seeded dataset, scenario generator
+├── api/             REST client; a correlation id on every request
+├── app/             providers, router, shell, the single ticking clock
+├── features/        inbox · lead-detail
+├── components/      Radix-based primitives
+└── observability/   logger · Web Vitals · error boundary · debug panel</code></pre>
+
+      <h2>System Design Document</h2>
+      <p>Please read <strong><a href="SYSTEM-ANALYSIS.md">SYSTEM-ANALYSIS.md</a></strong> before opening <a href="SYSTEM-DESIGN.html">SYSTEM-DESIGN.html</a> with a browser.</p>
+
+      <h2>AI Collaboration Narrative</h2>
+      <p>How the AI was directed, how its output was verified, what it got wrong.</p>
+
+      <h3>The strategy: make something external adjudicate</h3>
+      <p>The strategy was not “generate, then review by reading”. Reading does not catch a wrong annuity factor. The strategy was to build <strong>independent adjudicators</strong> and let them referee.</p>
+      <p>That produced a set of artifacts that exist purely to disagree with the generated code:</p>
+      <ol>
+        <li><strong><code>scripts/mutation-sanity.mjs</code></strong> - flips four constants and asserts the suite goes red. Coverage says a line <em>ran</em>; this asks whether anything would <em>notice</em> if it were wrong.</li>
+        <li><strong><code>cypress-axe</code></strong> - after a model-based colour calculation disagreed with the browser, axe became the arbiter for contrast rather than any prediction.</li>
+        <li><strong>The 144-pair transition table</strong> - generated against a <em>rule</em>, not a hand-copied matrix, because a hand-copied matrix is just a second place to make the same mistake.</li>
+      </ol>
+
+      <h3>What the AI actually got wrong</h3>
+      <p>Every entry is a real defect caught by running something, with the test that caught it. The full log is <strong><a href="docs/ai-collaboration/corrections.md">docs/ai-collaboration/corrections.md</a></strong>.</p>
+
+      <h3>How quality was maintained</h3>
+      <ul>
+        <li><strong>No hand-computed constants, anywhere.</strong> Every expected figure is generated by running the code. This rule exists because hand-copied constants were the most common defect found in review.</li>
+        <li><strong>The console is a hard failure.</strong> A React warning fails the test, in both Vitest and Cypress. A test that needs an error opts in explicitly with <code>allowConsoleError()</code>.</li>
+        <li><strong>Automated architectural compliance via Lint.</strong> <code>src/domain/</code> cannot import React or data access, and cannot call <code>Date.now()</code>, <code>new Date()</code> or <code>Math.random()</code> - <code>new Date(epochMs)</code> stays legal. Backed by <code>scripts/check-determinism.mjs</code>, which a lint comment cannot disable.</li>
+        <li><strong>Assumptions are numbered and cited in code</strong> at the point of use, so they are addressable rather than buried in prose.</li>
+        <li><strong>Every refusal carries a remedy.</strong> A domain error is <code>{code, message, remedy}</code>, the UI renders the remedy verbatim, and the same string is asserted in the unit test <em>and</em> the Cypress spec - so the copy cannot drift from the rule that produced it.</li>
+      </ul>
+
+      <h3>What I would do differently</h3>
+      <p>Every domain module was written and verified before the screen that renders it. That ordering was right - a UI over unverified logic looks finished and is not - and every screen proved the point: each took a fraction of the time its domain module did, because the hard part was already settled and the component had nothing to do but render it.</p>
+      <p>The thing I would change is <strong>when the cross-surface checks got written</strong>. A four-line spec asserting that two screens derived the same never-worked count found that they were computed from different sources - a discrepancy that had been sitting in the seed data for hours. Checks that compare two surfaces against each other are cheap and catch a class of bug that no amount of testing either surface alone will find. Next time they go in with the second screen, not the fifth.</p>
+      <hr />
+
+      <h2>Documentation</h2>
+      <table>
+        <thead><tr><th>Document</th><th>Contents</th></tr></thead>
+        <tbody>
+          <tr><td><strong><a href="SYSTEM-ANALYSIS.md">SYSTEM-ANALYSIS.md</a></strong></td><td>System Analysis, Problems, Technology Choices, Observability</td></tr>
+          <tr><td><strong><a href="SYSTEM-DESIGN.md">SYSTEM-DESIGN.md</a></strong></td><td>Markdown version of the System Design Document with Mermaid architecture diagrams</td></tr>
+          <tr><td><strong><a href="SYSTEM-DESIGN.pdf">SYSTEM-DESIGN.pdf</a></strong></td><td>The System Design Document (.pdf file): business context, architecture, trade-offs, judgment</td></tr>
+          <tr><td><strong><a href="SYSTEM-DESIGN.html">SYSTEM-DESIGN.html</a></strong></td><td>The System Design Document (.html page): business context, architecture, trade-offs, judgment</td></tr>
+          <tr><td><a href="docs/testing.md">docs/testing.md</a></td><td>Test strategy, the determinism contract, reading the artifacts</td></tr>
+          <tr><td><a href="docs/observability.md">docs/observability.md</a></td><td>Logging, correlation ids, Web Vitals, the production path</td></tr>
+          <tr><td><a href="docs/assumptions.md">docs/assumptions.md</a></td><td>Numbered assumption register, cited from code</td></tr>
+          <tr><td><strong><a href="docs/ai-collaboration/">docs/ai-collaboration/</a></strong></td><td>Prompt strategy, verification log, corrections log</td></tr>
+          <tr><td><strong><a href="CLAUDE.md">CLAUDE.md</a> &amp; <a href="AGENTS.md">AGENTS.md</a></strong></td><td>Working agreement for AI agents in this repository</td></tr>
+        </tbody>
+      </table>
+    </main>
+  </body>
+</html>
