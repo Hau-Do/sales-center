@@ -44,7 +44,7 @@ jobs:
         run: |
           if grep -q '"overrides"' package.json; then
             echo "::error::package.json gained an 'overrides' block."
-            echo "The dependency set is pinned so it installs cleanly without one — see DESIGN.md section 4.1."
+            echo "The dependency set is pinned so it installs cleanly without one — see SYSTEM-ANALYSIS.md section 4."
             exit 1
           fi
           echo "No overrides. Clean peer resolution."
@@ -216,7 +216,8 @@ jobs:
 
       - name: Required deliverables are present
         run: |
-          for f in README.md DESIGN.md CLAUDE.md AGENTS.md \
+          for f in README.md SYSTEM-ANALYSIS.md SYSTEM-DESIGN.md SYSTEM-DESIGN.html \
+                   CLAUDE.md AGENTS.md \
                    docs/testing.md docs/observability.md docs/assumptions.md \
                    docs/ai-collaboration/corrections.md \
                    docs/ai-collaboration/verification-log.md \
