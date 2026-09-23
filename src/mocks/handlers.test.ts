@@ -5,6 +5,7 @@ import { memoryDb } from '@/data/db'
 import { createHandlers } from './handlers'
 import { api, ApiError } from '@/api/client'
 import { resetCorrelationIds } from '@/observability/correlation'
+import { fromISO } from '@/domain/instant'
 import { DEMO_NOW } from './seed/generate'
 import { allowConsoleError } from '@/test/setup'
 
@@ -177,6 +178,20 @@ describe('PATCH /leads/:id/stage', () => {
     await api.moveStage(target.id, 'contacted')
     const { activities } = await api.listActivities(target.id)
     expect(activities.some((a) => a.type === 'stage-changed')).toBe(true)
+  })
+
+  it('timestamps the lead and timeline at the instant the action occurred', async () => {
+    const target = anchor('ENQ-4101')
+    const actionAt = fromISO('2026-09-19T10:42:00Z')
+
+    const { lead } = await api.moveStage(target.id, 'contacted', actionAt)
+    const { activities } = await api.listActivities(target.id)
+    const stageChange = activities.find((activity) => activity.type === 'stage-changed')
+
+    expect(lead.lastStageChangeAt).toBe(actionAt)
+    expect(lead.updatedAt).toBe(actionAt)
+    expect(stageChange?.occurredAt).toBe(actionAt)
+    expect(stageChange?.recordedAt).toBe(actionAt)
   })
 
   it('enforces the SAME guard the UI enforces, returning the identical error shape', async () => {

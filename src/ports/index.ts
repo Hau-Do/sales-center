@@ -7,7 +7,7 @@
  * Cypress freeze the entire application's sense of time from a URL parameter.
  */
 
-import type { Instant } from '@/domain/instant'
+import { instant, type Instant } from '@/domain/instant'
 
 export interface Clock {
   now(): Instant
@@ -26,6 +26,11 @@ export interface Ports {
   readonly clock: Clock
   readonly ids: IdGenerator
   readonly rng: Rng
+}
+
+/** The real wall clock used by the running application. */
+export function systemClock(readNow: () => number = Date.now): Clock {
+  return { now: () => instant(readNow()) }
 }
 
 /** A clock pinned to one instant. The default for tests. */

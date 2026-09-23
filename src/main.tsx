@@ -5,6 +5,7 @@ import { App } from './App'
 import { applyBootstrap, isE2E, parseBootstrapParams } from './bootstrap'
 import { logger } from './observability/logger'
 import { reportWebVitals } from './observability/webVitals'
+import { systemClock } from './ports'
 
 /**
  * Startup order matters, and this is the order:
@@ -22,6 +23,7 @@ async function start(): Promise<void> {
   const { worker, browserStore } = await import('./mocks/browser')
   const params = parseBootstrapParams(window.location.search)
   const meta = applyBootstrap(browserStore, params)
+  const clockBase = params.now ?? systemClock().now()
 
   await worker.start({
     onUnhandledRequest: 'bypass',
@@ -55,7 +57,7 @@ async function start(): Promise<void> {
 
   createRoot(rootEl).render(
     <StrictMode>
-      <App clockBase={meta.now} />
+      <App clockBase={clockBase} />
     </StrictMode>,
   )
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { fromISO, MINUTE_MS } from '@/domain/instant'
-import { controllableClock, fixedClock, seededRng, sequentialIds } from './index'
+import { controllableClock, fixedClock, seededRng, sequentialIds, systemClock } from './index'
 
 const NOW = fromISO('2026-09-18T16:52:00Z')
 
@@ -9,6 +9,17 @@ describe('fixedClock()', () => {
     const clock = fixedClock(NOW)
     expect(clock.now()).toBe(NOW)
     expect(clock.now()).toBe(NOW)
+  })
+})
+
+describe('systemClock()', () => {
+  it('reads the current wall-clock value each time', () => {
+    let now: number = NOW
+    const clock = systemClock(() => now)
+
+    expect(clock.now()).toBe(NOW)
+    now += MINUTE_MS
+    expect(clock.now()).toBe(NOW + MINUTE_MS)
   })
 })
 

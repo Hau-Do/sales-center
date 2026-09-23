@@ -87,6 +87,30 @@ describe('Pipeline board', () => {
         })
     })
 
+    it('logs the stage change at the time the action is performed', () => {
+      cy.advanceClock(87 * 60 * 1000)
+
+      cy.byTestId('column-new-enquiry')
+        .find('[data-testid="pipeline-card"]')
+        .first()
+        .invoke('attr', 'data-lead-id')
+        .then((leadId) => {
+          cy.byTestId('column-new-enquiry')
+            .find('[data-testid="move-stage-trigger"]')
+            .first()
+            .click()
+          cy.byTestId('move-to-contacted').click()
+          cy.settled()
+
+          cy.visit(`/leads/${leadId}`)
+          cy.settled()
+          cy.byTestId('activity-timeline')
+            .contains('Stage changed')
+            .parents('[data-testid="timeline-entry"]')
+            .should('contain.text', '10:42')
+        })
+    })
+
     it('is fully operable from the keyboard', () => {
       cy.byTestId('move-stage-trigger').first().focus().type('{enter}')
       cy.byTestId('move-stage-menu').should('be.visible')

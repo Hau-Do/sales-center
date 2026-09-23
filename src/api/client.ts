@@ -135,6 +135,7 @@ export const api = {
       type: Activity['type']
       note?: string
       occurredAt?: number
+      actionAt?: number
       outcome?: Activity['outcome']
       isCustomerContact?: boolean
     },
@@ -144,21 +145,26 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
-  moveStage: (leadId: string, stage: PipelineStage) =>
+  moveStage: (leadId: string, stage: PipelineStage, actionAt?: number) =>
     request<{ lead: Lead }>(`/leads/${leadId}/stage`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage }),
+      body: JSON.stringify({ stage, actionAt }),
     }),
 
   closeLead: (
     leadId: string,
-    body: { outcome: 'won' } | { outcome: 'lost'; reason: LostReason; note?: string },
+    body:
+      | { outcome: 'won'; actionAt?: number }
+      | { outcome: 'lost'; reason: LostReason; note?: string; actionAt?: number },
   ) =>
     request<{ lead: Lead }>(`/leads/${leadId}/close`, {
       method: 'POST',
       body: JSON.stringify(body),
     }),
 
-  reopenLead: (leadId: string) =>
-    request<{ lead: Lead }>(`/leads/${leadId}/reopen`, { method: 'POST' }),
+  reopenLead: (leadId: string, actionAt?: number) =>
+    request<{ lead: Lead }>(`/leads/${leadId}/reopen`, {
+      method: 'POST',
+      body: JSON.stringify({ actionAt }),
+    }),
 }

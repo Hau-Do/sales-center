@@ -217,6 +217,7 @@ export function createHandlers(store: Store) {
         type?: unknown
         note?: unknown
         occurredAt?: unknown
+        actionAt?: unknown
         author?: unknown
         outcome?: unknown
         isCustomerContact?: unknown
@@ -231,8 +232,10 @@ export function createHandlers(store: Store) {
       }
 
       const meta = store.meta()
+      const actionAt: Instant =
+        typeof body.actionAt === 'number' ? instant(body.actionAt) : meta.now
       const occurredAt: Instant =
-        typeof body.occurredAt === 'number' ? instant(body.occurredAt) : meta.now
+        typeof body.occurredAt === 'number' ? instant(body.occurredAt) : actionAt
 
       const existing = store.activities(leadId)
       const previous = existing.length > 0 ? existing[existing.length - 1] : undefined
@@ -242,7 +245,7 @@ export function createHandlers(store: Store) {
         leadId,
         type: body.type,
         occurredAt,
-        recordedAt: meta.now,
+        recordedAt: actionAt,
         author: typeof body.author === 'string' ? body.author : (lead.assignedTo ?? 'exec_amara'),
         ...(typeof body.note === 'string' && body.note.length > 0 ? { note: body.note } : {}),
         ...(isActivityOutcome(body.outcome) ? { outcome: body.outcome } : {}),
@@ -256,7 +259,7 @@ export function createHandlers(store: Store) {
 
       // Logging the first genuine contact stops the response clock. Doing this
       // server-side means the SLA cannot be "fixed" by the UI alone.
-      let updated = applyClockStop({ ...lead, updatedAt: meta.now }, activity)
+      let updated = applyClockStop({ ...lead, updatedAt: actionAt }, activity)
       if (activity.type === 'licence-check') {
         updated = { ...updated, licenceCheckedAt: activity.occurredAt }
       }
@@ -277,7 +280,7 @@ export function createHandlers(store: Store) {
       const lead = store.lead(String(params['leadId']))
       if (!lead) return notFound(request, 'That lead')
 
-      const body = (await request.json()) as { stage?: unknown }
+      const body = (await request.json()) as { stage?: unknown; actionAt?: unknown }
       if (!isPipelineStage(body.stage)) {
         return problem(request, 422, {
           code: 'UNKNOWN_STAGE',
@@ -287,8 +290,10 @@ export function createHandlers(store: Store) {
       }
 
       const meta = store.meta()
+      const actionAt: Instant =
+        typeof body.actionAt === 'number' ? instant(body.actionAt) : meta.now
       // The same domain function the optimistic UI called.
-      const result = moveStage(lead, body.stage, meta.now)
+      const result = moveStage(lead, body.stage, actionAt)
       if (!result.ok) return problem(request, 422, result.error)
 
       const moved = result.value
@@ -297,8 +302,8 @@ export function createHandlers(store: Store) {
         id: store.nextId('act'),
         leadId: moved.id,
         type: 'stage-changed',
-        occurredAt: meta.now,
-        recordedAt: meta.now,
+        occurredAt: actionAt,
+        recordedAt: actionAt,
         author: moved.assignedTo ?? 'exec_amara',
         note: `Stage moved to ${body.stage}.`,
       })
@@ -315,11 +320,18 @@ export function createHandlers(store: Store) {
       const lead = store.lead(String(params['leadId']))
       if (!lead) return notFound(request, 'That lead')
 
-      const body = (await request.json()) as { outcome?: unknown; reason?: unknown; note?: unknown }
+      const body = (await request.json()) as {
+        outcome?: unknown
+        reason?: unknown
+        note?: unknown
+        actionAt?: unknown
+      }
       const meta = store.meta()
+      const actionAt: Instant =
+        typeof body.actionAt === 'number' ? instant(body.actionAt) : meta.now
 
       if (body.outcome === 'won') {
-        const result = markWon(lead, meta.now)
+        const result = markWon(lead, actionAt)
         if (!result.ok) return problem(request, 422, result.error)
         store.putLead(result.value)
         return HttpResponse.json({ lead: result.value }, { headers: withCorrelation(request) })
@@ -336,7 +348,7 @@ export function createHandlers(store: Store) {
       const result = markLost(
         lead,
         body.reason,
-        meta.now,
+        actionAt,
         typeof body.note === 'string' ? body.note : undefined,
       )
       if (!result.ok) return problem(request, 422, result.error)
@@ -345,8 +357,8 @@ export function createHandlers(store: Store) {
         id: store.nextId('act'),
         leadId: lead.id,
         type: 'lost-sale',
-        occurredAt: meta.now,
-        recordedAt: meta.now,
+        occurredAt: actionAt,
+        recordedAt: actionAt,
         author: lead.assignedTo ?? 'exec_amara',
         note: `Lost: ${body.reason}.`,
       })
@@ -369,7 +381,11 @@ export function createHandlers(store: Store) {
       const lead = store.lead(String(params['leadId']))
       if (!lead) return notFound(request, 'That lead')
 
-      const result = reopenLead(lead, store.meta().now)
+      const body = (await request.json()) as { actionAt?: unknown }
+      const meta = store.meta()
+      const actionAt: Instant =
+        typeof body.actionAt === 'number' ? instant(body.actionAt) : meta.now
+      const result = reopenLead(lead, actionAt)
       if (!result.ok) return problem(request, 422, result.error)
       store.putLead(result.value)
       return HttpResponse.json({ lead: result.value }, { headers: withCorrelation(request) })
