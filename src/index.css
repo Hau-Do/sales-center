@@ -1,0 +1,262 @@
+@import 'tailwindcss';
+
+/*
+ * Tailwind v4 is CSS-first: there is no tailwind.config.js and no content
+ * globs. Theme tokens are declared here with @theme and become utilities
+ * automatically (--color-brand-500 -> bg-brand-500, text-brand-500, ...).
+ *
+ * Dark mode is attribute-driven rather than media-driven, because the reviewer
+ * needs to be able to toggle it. The inline script in index.html sets
+ * data-theme before first paint so there is no flash.
+ */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@theme {
+  --font-sans:
+    'Inter var', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+
+  /* Keyloop-inspired: deep navy-slate surfaces carrying a teal-cyan accent. */
+  --color-navy-50: oklch(0.971 0.008 247);
+  --color-navy-100: oklch(0.936 0.016 248);
+  --color-navy-200: oklch(0.876 0.028 249);
+  --color-navy-300: oklch(0.783 0.043 251);
+  --color-navy-400: oklch(0.65 0.054 254);
+  --color-navy-500: oklch(0.541 0.056 257);
+  --color-navy-600: oklch(0.438 0.051 259);
+  --color-navy-700: oklch(0.362 0.044 260);
+  --color-navy-800: oklch(0.271 0.036 261);
+  --color-navy-900: oklch(0.208 0.031 265);
+  --color-navy-950: oklch(0.147 0.026 268);
+
+  --color-teal-50: oklch(0.977 0.021 187);
+  --color-teal-100: oklch(0.947 0.045 189);
+  --color-teal-200: oklch(0.898 0.079 191);
+  --color-teal-300: oklch(0.83 0.113 193);
+  --color-teal-400: oklch(0.746 0.126 196);
+  --color-teal-500: oklch(0.668 0.119 199);
+  --color-teal-600: oklch(0.575 0.104 201);
+  --color-teal-700: oklch(0.487 0.088 203);
+  --color-teal-800: oklch(0.412 0.075 204);
+  --color-teal-900: oklch(0.359 0.065 206);
+  --color-teal-950: oklch(0.24 0.048 208);
+}
+
+/*
+ * Semantic layer. Components reference these, never the raw ramp, so the whole
+ * app re-themes from one block. SLA states in particular must stay legible in
+ * both themes — an amber chip that vanishes on dark defeats the point.
+ */
+:root {
+  --sc-canvas: oklch(0.985 0.002 247);
+  --sc-surface: oklch(1 0 0);
+  --sc-surface-raised: oklch(0.995 0.001 247);
+  --sc-surface-sunken: oklch(0.967 0.003 247);
+  --sc-border: oklch(0.906 0.008 250);
+  --sc-border-strong: oklch(0.83 0.014 252);
+
+  --sc-text: oklch(0.23 0.03 264);
+  --sc-text-muted: oklch(0.49 0.022 259);
+  --sc-text-subtle: oklch(0.53 0.018 257);
+  --sc-text-inverse: oklch(0.985 0.002 247);
+
+  /*
+   * Light-mode lightness values are COMPUTED, not eyeballed.
+   *
+   * Each tone is used as text on its own -subtle background (badges, chips,
+   * the triage bar) as well as on the canvas, and the -subtle backgrounds sit
+   * around L 0.95 — so the tone has to clear 4.5:1 against the tighter of the
+   * two. The ratios below are on-subtle / on-canvas, verified with an
+   * OKLCH -> sRGB -> WCAG relative-luminance calculation.
+   *
+   * Found by cypress-axe failing the build, not by inspection.
+   */
+  --sc-brand: oklch(0.51 0.104 201); /* 4.64 / 5.11 */
+  --sc-brand-hover: oklch(0.45 0.092 203);
+  --sc-brand-subtle: oklch(0.947 0.045 189);
+  --sc-brand-fg: oklch(1 0 0);
+
+  --sc-ok: oklch(0.505 0.142 155); /* 4.66 / 5.16 */
+  --sc-ok-subtle: oklch(0.945 0.048 156);
+  --sc-warn: oklch(0.53 0.156 70); /* 4.68 / 5.20 */
+  --sc-warn-subtle: oklch(0.953 0.058 82);
+  --sc-danger: oklch(0.535 0.196 26); /* 4.71 / 5.48 */
+  --sc-danger-subtle: oklch(0.944 0.04 24);
+  --sc-info: oklch(0.525 0.148 258); /* 4.64 / 5.24 */
+  --sc-info-subtle: oklch(0.945 0.036 259);
+
+  --sc-focus: oklch(0.668 0.119 199);
+
+  /* Chart marks. Validated with the dataviz palette checker against both
+     surfaces: lightness band, chroma floor and >=3:1 contrast all pass, so a
+     single value serves light and dark rather than an automatic flip. */
+  --sc-chart-bar: #009aa1;
+  --sc-chart-grid: oklch(0.906 0.008 250);
+
+  --sc-shadow: 0 1px 2px 0 oklch(0.2 0.03 264 / 0.06), 0 1px 3px 0 oklch(0.2 0.03 264 / 0.08);
+  --sc-shadow-lg: 0 10px 28px -6px oklch(0.2 0.03 264 / 0.18);
+}
+
+:root[data-theme='dark'] {
+  --sc-canvas: oklch(0.147 0.026 268);
+  --sc-surface: oklch(0.196 0.03 266);
+  --sc-surface-raised: oklch(0.236 0.032 264);
+  --sc-surface-sunken: oklch(0.172 0.028 267);
+  --sc-border: oklch(0.297 0.034 262);
+  --sc-border-strong: oklch(0.386 0.04 260);
+
+  --sc-text: oklch(0.955 0.006 247);
+  --sc-text-muted: oklch(0.752 0.023 255);
+  /* 4.62:1 on the dark brand-subtle chip, 6.35:1 on the surface. The previous
+     0.615 cleared the surface easily but failed on the active view-rail pill —
+     the tighter of the two backgrounds is the one that decides the value. */
+  --sc-text-subtle: oklch(0.68 0.028 257);
+  --sc-text-inverse: oklch(0.16 0.027 267);
+
+  --sc-brand: oklch(0.746 0.126 196);
+  --sc-brand-hover: oklch(0.83 0.113 193);
+  /* Kept well inside the sRGB gamut and darker than it looks it needs to be:
+     near the gamut edge Chromium reduces chroma rather than clipping, which
+     renders the colour LIGHTER than a naive conversion predicts and quietly
+     eats the contrast of the text sitting on it. Verified by cypress-axe. */
+  --sc-brand-subtle: oklch(0.24 0.03 204);
+  --sc-brand-fg: oklch(0.147 0.026 268);
+
+  --sc-ok: oklch(0.75 0.15 156);
+  --sc-ok-subtle: oklch(0.3 0.062 157);
+  --sc-warn: oklch(0.82 0.145 79);
+  --sc-warn-subtle: oklch(0.33 0.062 70);
+  --sc-danger: oklch(0.72 0.16 24);
+  /* Kept low-chroma and dark: near the gamut edge Chromium reduces chroma
+     rather than clipping, so a nominally dark colour renders lighter than a
+     naive conversion predicts and eats the contrast of text on it. Verified
+     with cypress-axe, not with a model. */
+  --sc-danger-subtle: oklch(0.25 0.05 22);
+  --sc-info: oklch(0.73 0.13 257);
+  --sc-info-subtle: oklch(0.3 0.06 259);
+
+  --sc-focus: oklch(0.746 0.126 196);
+
+  --sc-chart-bar: #009aa1;
+  --sc-chart-grid: oklch(0.297 0.034 262);
+
+  --sc-shadow: 0 1px 2px 0 oklch(0 0 0 / 0.4), 0 1px 3px 0 oklch(0 0 0 / 0.3);
+  --sc-shadow-lg: 0 10px 28px -6px oklch(0 0 0 / 0.55);
+}
+
+/* Expose the semantic layer as Tailwind utilities (bg-surface, text-muted, ...) */
+@theme inline {
+  --color-canvas: var(--sc-canvas);
+  --color-surface: var(--sc-surface);
+  --color-surface-raised: var(--sc-surface-raised);
+  --color-surface-sunken: var(--sc-surface-sunken);
+  --color-line: var(--sc-border);
+  --color-line-strong: var(--sc-border-strong);
+
+  --color-ink: var(--sc-text);
+  --color-muted: var(--sc-text-muted);
+  --color-subtle: var(--sc-text-subtle);
+  --color-inverse: var(--sc-text-inverse);
+
+  --color-brand: var(--sc-brand);
+  --color-brand-hover: var(--sc-brand-hover);
+  --color-brand-subtle: var(--sc-brand-subtle);
+  --color-brand-fg: var(--sc-brand-fg);
+
+  --color-ok: var(--sc-ok);
+  --color-ok-subtle: var(--sc-ok-subtle);
+  --color-warn: var(--sc-warn);
+  --color-warn-subtle: var(--sc-warn-subtle);
+  --color-danger: var(--sc-danger);
+  --color-danger-subtle: var(--sc-danger-subtle);
+  --color-info: var(--sc-info);
+  --color-info-subtle: var(--sc-info-subtle);
+
+  --shadow-card: var(--sc-shadow);
+  --shadow-float: var(--sc-shadow-lg);
+}
+
+@layer base {
+  * {
+    border-color: var(--sc-border);
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  html[data-theme='dark'] {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--sc-canvas);
+    color: var(--sc-text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Money, SLA clocks and KPI figures must not jitter as digits change. */
+  .tnum,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--sc-focus);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  /*
+   * Under E2E, nothing animates.
+   *
+   * Colour transitions mean a theme toggle passes through intermediate blends
+   * for a few hundred milliseconds. An accessibility scan that lands in that
+   * window measures contrast against a colour the user never actually sees,
+   * and fails or passes depending on machine speed — a flake that looks like a
+   * real defect. `src/bootstrap.ts` sets data-e2e when VITE_E2E is on.
+   */
+  :root[data-e2e='true'] *,
+  :root[data-e2e='true'] *::before,
+  :root[data-e2e='true'] *::after {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* A UK number plate, rendered. Cheap, and it is the single strongest signal
+     to a dealership reviewer that the data is real rather than lorem ipsum. */
+  .reg-plate {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 0.1875rem;
+    background: #ffd800;
+    color: #111;
+    border: 1px solid oklch(0.45 0.05 90);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    line-height: 1.35;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+}
