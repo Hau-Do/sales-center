@@ -10,12 +10,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # Keep Cypress's binary outside the checkout so `eslint .` never scans
-  # Cypress's bundled application source. The E2E job still restores this
-  # directory independently of node_modules.
-  CYPRESS_CACHE_FOLDER: ${{ runner.temp }}/cypress-cache
-
 jobs:
   # ---------------------------------------------------------------------------
   # Static analysis and unit tests, across every Node version the dependency set
@@ -92,7 +86,9 @@ jobs:
       - name: Cache the Cypress binary
         uses: actions/cache@v4
         with:
-          path: ${{ env.CYPRESS_CACHE_FOLDER }}
+          # Cypress's standard Linux cache is outside the checkout, so
+          # `eslint .` cannot traverse the bundled Cypress application.
+          path: ~/.cache/Cypress
           key: cypress-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
       - name: Install
