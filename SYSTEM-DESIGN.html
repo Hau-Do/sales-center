@@ -1,0 +1,2396 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>System Design - Sales Center</title>
+    <meta
+      name="description"
+      content="System Design Document for the Sales Center lead management tool: business context, architecture, technical trade-offs and system design judgment."
+    />
+    <style>
+      /* ----------------------------------------------------------- tokens */
+      :root {
+        --ink: #0f172a;
+        --ink-2: #1e293b;
+        --body: #334155;
+        --muted: #64748b;
+        --faint: #94a3b8;
+        --rule: #e2e8f0;
+        --rule-2: #cbd5e1;
+        --surface: #ffffff;
+        --surface-2: #f8fafc;
+        --surface-3: #f1f5f9;
+        --teal: #00767c;
+        --teal-ink: #005f64;
+        --teal-wash: #e6f4f4;
+        --navy: #0b2942;
+        --amber-ink: #8a5a00;
+        --amber-wash: #fdf6e3;
+        --rose-ink: #9f1239;
+        --rose-wash: #fdf2f5;
+        --green-ink: #15653f;
+        --diag-fill: #ffffff;
+        --diag-fill-2: #f1f5f9;
+        --diag-stroke: #94a3b8;
+        --diag-ink: #0f172a;
+        --diag-halo: #ffffff;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --ink: #f1f5f9;
+          --ink-2: #e2e8f0;
+          --body: #cbd5e1;
+          --muted: #94a3b8;
+          --faint: #64748b;
+          --rule: #1e293b;
+          --rule-2: #334155;
+          --surface: #0b1220;
+          --surface-2: #111a2b;
+          --surface-3: #16203300;
+          --teal: #4fd1c9;
+          --teal-ink: #7fe3dc;
+          --teal-wash: #0d3b3d;
+          --navy: #cbd5e1;
+          --amber-ink: #f0c36d;
+          --amber-wash: #2c2410;
+          --rose-ink: #fda4af;
+          --rose-wash: #2b1620;
+          --green-ink: #6ee7b7;
+          --diag-fill: #111a2b;
+          --diag-fill-2: #1b2639;
+          --diag-stroke: #64748b;
+          --diag-ink: #e2e8f0;
+          --diag-halo: #0b1220;
+        }
+      }
+
+      :root[data-theme='dark'] {
+        --ink: #f1f5f9;
+        --ink-2: #e2e8f0;
+        --body: #cbd5e1;
+        --muted: #94a3b8;
+        --faint: #64748b;
+        --rule: #1e293b;
+        --rule-2: #334155;
+        --surface: #0b1220;
+        --surface-2: #111a2b;
+        --surface-3: #162033;
+        --teal: #4fd1c9;
+        --teal-ink: #7fe3dc;
+        --teal-wash: #0d3b3d;
+        --navy: #cbd5e1;
+        --amber-ink: #f0c36d;
+        --amber-wash: #2c2410;
+        --rose-ink: #fda4af;
+        --rose-wash: #2b1620;
+        --green-ink: #6ee7b7;
+        --diag-fill: #111a2b;
+        --diag-fill-2: #1b2639;
+        --diag-stroke: #64748b;
+        --diag-ink: #e2e8f0;
+        --diag-halo: #0b1220;
+      }
+
+      /* ------------------------------------------------------------ base */
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        margin: 0;
+        background: var(--surface);
+        color: var(--body);
+        font:
+          15px/1.62 'Helvetica Neue',
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Arial,
+          sans-serif;
+        font-feature-settings: 'kern' 1;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      main {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 48px 16px 96px;
+      }
+
+      /* ---------------------------------------------------------- titles */
+      .masthead {
+        border-top: 5px solid var(--teal);
+        padding-top: 22px;
+        margin-bottom: 34px;
+      }
+
+      .eyebrow {
+        font-size: 11px;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+        color: var(--teal-ink);
+        font-weight: 700;
+        margin: 0 0 8px;
+      }
+
+      h1 {
+        font-size: 30px;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+        margin: 0 0 10px;
+        font-weight: 700;
+      }
+
+      .standfirst {
+        font-size: 15px;
+        color: var(--muted);
+        margin: 0 0 18px;
+        max-width: 62ch;
+      }
+
+      .meta-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 28px;
+        font-size: 12.5px;
+        color: var(--muted);
+        border-top: 1px solid var(--rule);
+        border-bottom: 1px solid var(--rule);
+        padding: 11px 0;
+      }
+
+      .meta-strip b {
+        color: var(--ink-2);
+        font-weight: 600;
+      }
+
+      h2 {
+        font-size: 21px;
+        letter-spacing: -0.01em;
+        color: var(--ink);
+        margin: 0 0 6px;
+        font-weight: 700;
+        break-after: avoid;
+      }
+
+      h3 {
+        font-size: 15.5px;
+        color: var(--ink);
+        margin: 30px 0 9px;
+        font-weight: 700;
+        break-after: avoid;
+      }
+
+      h4 {
+        font-size: 13.5px;
+        color: var(--ink-2);
+        margin: 22px 0 7px;
+        font-weight: 700;
+        break-after: avoid;
+      }
+
+      .part {
+        margin-top: 46px;
+      }
+
+      .part-head {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+        border-bottom: 2px solid var(--ink);
+        padding-bottom: 9px;
+        margin-bottom: 8px;
+      }
+
+      .part-num {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        color: var(--teal-ink);
+        white-space: nowrap;
+      }
+
+      .part-lede {
+        color: var(--muted);
+        font-size: 13.5px;
+        margin: 0 0 4px;
+      }
+
+      p {
+        margin: 0 0 13px;
+        max-width: 72ch;
+      }
+
+      ul,
+      ol {
+        margin: 0 0 13px;
+        padding-left: 20px;
+        max-width: 72ch;
+      }
+
+      li {
+        margin-bottom: 5px;
+      }
+
+      strong {
+        color: var(--ink);
+        font-weight: 660;
+      }
+
+      code {
+        font:
+          12.5px/1.45 ui-monospace,
+          'SF Mono',
+          Menlo,
+          Consolas,
+          monospace;
+        background: var(--surface-3);
+        border: 1px solid var(--rule);
+        border-radius: 3px;
+        padding: 0.5px 4px;
+        color: var(--ink-2);
+        white-space: nowrap;
+      }
+
+      /* Identifiers like PREPARATION_REQUIRED_BEFORE_HANDOVER are wider than a
+         narrow table column. Let them break rather than overflow the cell — but
+         only inside tables, so prose keeps its unbroken identifiers. */
+      td code,
+      th code {
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+
+      a {
+        color: var(--teal-ink);
+      }
+
+      /* ---------------------------------------------------------- tables */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0 20px;
+        font-size: 13px;
+      }
+
+      caption {
+        caption-side: top;
+        text-align: left;
+        font-size: 12px;
+        color: var(--muted);
+        padding-bottom: 7px;
+      }
+
+      th {
+        text-align: left;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 700;
+        border-bottom: 1.5px solid var(--rule-2);
+        padding: 0 10px 7px;
+        vertical-align: bottom;
+      }
+
+      th:first-child,
+      td:first-child {
+        padding-left: 0;
+      }
+
+      th:last-child,
+      td:last-child {
+        padding-right: 0;
+      }
+
+      td {
+        border-bottom: 1px solid var(--rule);
+        padding: 8px 10px;
+        vertical-align: top;
+      }
+
+      tbody tr:nth-child(even) td {
+        background: var(--surface-2);
+      }
+
+      tr {
+        break-inside: avoid;
+      }
+
+      td b,
+      td strong {
+        color: var(--ink);
+        font-weight: 640;
+      }
+
+      .num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+
+      /* ----------------------------------------------------------- scope */
+      .scope-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin: 14px 0 6px;
+      }
+
+      .scope-card {
+        border: 1px solid var(--rule-2);
+        border-radius: 8px;
+        padding: 14px 16px 6px;
+        break-inside: avoid;
+      }
+
+      .scope-card.in {
+        border-left: 4px solid var(--teal);
+      }
+
+      .scope-card.out {
+        border-left: 4px solid var(--faint);
+      }
+
+      .scope-card h4 {
+        margin: 0 0 3px;
+        font-size: 13px;
+      }
+
+      .scope-card p.hint {
+        font-size: 11.5px;
+        color: var(--muted);
+        margin: 0 0 10px;
+      }
+
+      .scope-card ul {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 8px;
+        font-size: 12.5px;
+      }
+
+      .scope-card li {
+        padding-left: 19px;
+        position: relative;
+        margin-bottom: 7px;
+        line-height: 1.5;
+      }
+
+      .scope-card.in li::before {
+        content: '✓';
+        position: absolute;
+        left: 0;
+        color: var(--teal);
+        font-weight: 700;
+      }
+
+      .scope-card.out li::before {
+        content: '✗';
+        position: absolute;
+        left: 0;
+        color: var(--faint);
+        font-weight: 700;
+      }
+
+      .scope-card li em {
+        display: block;
+        color: var(--muted);
+        font-style: normal;
+        font-size: 11.5px;
+      }
+
+      /* ---------------------------------------------------------- callout */
+      .callout {
+        border-left: 3px solid var(--teal);
+        background: var(--teal-wash);
+        padding: 12px 16px;
+        margin: 16px 0 20px;
+        border-radius: 0 6px 6px 0;
+        break-inside: avoid;
+      }
+
+      .callout p {
+        margin: 0;
+        font-size: 13.5px;
+      }
+
+      .callout p + p {
+        margin-top: 8px;
+      }
+
+      .callout .label {
+        display: block;
+        font-size: 10.5px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: var(--teal-ink);
+        margin-bottom: 5px;
+      }
+
+      .callout.warn {
+        border-left-color: #c2831a;
+        background: var(--amber-wash);
+      }
+
+      .callout.warn .label {
+        color: var(--amber-ink);
+      }
+
+      /* ---------------------------------------------------------- figures */
+      figure {
+        margin: 18px 0 24px;
+        break-inside: avoid;
+      }
+
+      figure svg {
+        display: block;
+        width: 100%;
+        height: auto;
+        border: 1px solid var(--rule);
+        border-radius: 8px;
+        background: var(--surface-2);
+      }
+
+      figcaption {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 9px;
+        line-height: 1.5;
+      }
+
+      figcaption b {
+        color: var(--ink-2);
+      }
+
+      /* -------------------------------------------------------- diagram css */
+      .dg text {
+        font-family: 'Helvetica Neue', -apple-system, Arial, sans-serif;
+        fill: var(--diag-ink);
+        stroke: var(--diag-halo);
+        stroke-width: 2.6px;
+        paint-order: stroke;
+        stroke-linejoin: round;
+      }
+
+      .dg .t {
+        font-size: 11.5px;
+        font-weight: 700;
+      }
+
+      .dg .s {
+        font-size: 10px;
+        fill: var(--muted);
+      }
+
+      .dg .m {
+        font-size: 10.5px;
+      }
+
+      .dg .hdr {
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        fill: var(--muted);
+      }
+
+      .dg rect.n {
+        fill: var(--diag-fill);
+        stroke: var(--diag-stroke);
+        stroke-width: 1.1;
+      }
+
+      .dg rect.n2 {
+        fill: var(--diag-fill-2);
+        stroke: var(--diag-stroke);
+        stroke-width: 1.1;
+      }
+
+      .dg rect.hi {
+        fill: var(--teal-wash);
+        stroke: var(--teal);
+        stroke-width: 1.8;
+      }
+
+      .dg rect.grp {
+        fill: none;
+        stroke: var(--rule-2);
+        stroke-width: 1.2;
+        stroke-dasharray: 5 4;
+      }
+
+      .dg line,
+      .dg path {
+        stroke: var(--diag-stroke);
+        fill: none;
+        stroke-width: 1.3;
+      }
+
+      .dg .dash {
+        stroke-dasharray: 5 4;
+      }
+
+      .dg .life {
+        stroke-dasharray: 3 4;
+        stroke-width: 1;
+      }
+
+      .dg .accent {
+        stroke: var(--teal);
+        stroke-width: 1.6;
+      }
+
+      /* ------------------------------------------------------------- misc */
+      .pill {
+        display: inline-block;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        padding: 1.5px 7px;
+        border-radius: 99px;
+        white-space: nowrap;
+      }
+
+      .pill.built {
+        background: var(--teal-wash);
+        color: var(--teal-ink);
+      }
+
+      .pill.later {
+        background: var(--surface-3);
+        color: var(--muted);
+        border: 1px solid var(--rule-2);
+      }
+
+      .pill.risk-h {
+        background: var(--rose-wash);
+        color: var(--rose-ink);
+      }
+
+      .pill.risk-m {
+        background: var(--amber-wash);
+        color: var(--amber-ink);
+      }
+
+      .pill.risk-l {
+        background: var(--surface-3);
+        color: var(--muted);
+        border: 1px solid var(--rule-2);
+      }
+
+      .footnote {
+        font-size: 12px;
+        color: var(--muted);
+        border-top: 1px solid var(--rule);
+        margin-top: 44px;
+        padding-top: 14px;
+      }
+
+      .toc {
+        border: 1px solid var(--rule-2);
+        border-radius: 8px;
+        padding: 16px 20px 12px;
+        margin: 28px 0 8px;
+        background: var(--surface-2);
+        break-inside: avoid;
+      }
+
+      .toc h4 {
+        margin: 0 0 9px;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .toc ol {
+        margin: 0;
+        padding-left: 17px;
+        font-size: 13px;
+        columns: 2;
+        column-gap: 28px;
+      }
+
+      .toc li {
+        margin-bottom: 5px;
+        break-inside: avoid;
+      }
+
+      .toc a {
+        text-decoration: none;
+        color: var(--ink-2);
+      }
+
+      .toc span {
+        color: var(--muted);
+      }
+
+      /* ------------------------------------------------------------ print */
+      @page {
+        size: A4;
+        margin: 15mm 14mm;
+      }
+
+      @media print {
+        :root {
+          --surface: #ffffff;
+          --surface-2: #f8fafc;
+        }
+
+        body {
+          font-size: 10.2pt;
+          line-height: 1.5;
+          background: #fff;
+        }
+
+        /* Chrome drops every background fill in print unless this is explicit,
+           which would silently flatten the zebra rows, the callouts and the
+           highlighted boxes inside the SVG diagrams. */
+        *,
+        *::before,
+        *::after {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        main {
+          max-width: none;
+          padding: 0;
+        }
+
+        h1 {
+          font-size: 21pt;
+        }
+
+        h2 {
+          font-size: 14.5pt;
+        }
+
+        h3 {
+          font-size: 11.5pt;
+          margin-top: 18px;
+        }
+
+        h4 {
+          font-size: 10pt;
+        }
+
+        table {
+          font-size: 8.6pt;
+        }
+
+        th {
+          font-size: 7.4pt;
+        }
+
+        code {
+          font-size: 8.4pt;
+        }
+
+        figcaption,
+        .part-lede,
+        caption {
+          font-size: 8.6pt;
+        }
+
+        .scope-card ul,
+        .footnote {
+          font-size: 8.8pt;
+        }
+
+        .callout p {
+          font-size: 9.4pt;
+        }
+
+        .dg .t {
+          font-size: 11px;
+        }
+
+        .part {
+          break-before: page;
+          margin-top: 0;
+        }
+
+        .part-1 {
+          break-before: auto;
+        }
+
+        .toc {
+          break-inside: avoid;
+        }
+
+        p,
+        li {
+          orphans: 3;
+          widows: 3;
+        }
+
+        a {
+          color: var(--ink-2);
+          text-decoration: none;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .scope-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .toc ol {
+          columns: 1;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main>
+      <!-- ================================================== MASTHEAD -->
+      <header class="masthead">
+        <p class="eyebrow">Keyloop Technical Assessment · Scenario C</p>
+        <h1>System Design Document - Sales Center</h1>
+        <p class="standfirst">
+          A sales lead management tool for a UK dealership group: one place to see every incoming
+          enquiry, work it, and prove it was worked. This document states the business case, the
+          architecture, the decisions that were genuinely contested, the judgment calls about where
+          the design would break, and how the whole thing gets built and released by one person.
+        </p>
+        <div class="meta-strip">
+          <span><b>Layer built</b> Frontend, backend mocked at the network boundary</span>
+          <span><b>Companion docs</b> SYSTEM-ANALYSIS.md + SYSTEM-DESIGN.md + README.md + docs/</span>
+        </div>
+      </header>
+
+      <nav class="toc">
+        <h4>Contents</h4>
+        <ol>
+          <li><a href="#p1">Business Context</a> <span>— problem, value, scope boundary</span></li>
+          <li>
+            <a href="#p2">High-Level Architecture</a>
+            <span>- context, data flow, components, data model, APIs</span>
+          </li>
+          <li>
+            <a href="#p3">Technical Decisions &amp; Trade-offs</a> <span>- stack, CI, A over B</span>
+          </li>
+          <li>
+            <a href="#p4">System Design Judgment</a>
+            <span>- bottlenecks, dependencies, fallbacks</span>
+          </li>
+          <li>
+            <a href="#p5">Observability</a>
+            <span>- correlation, telemetry, fault injection</span>
+          </li>
+          <li>
+            <a href="#p6">GenAI in Design</a>
+            <span>- proposals, verification, division of labour</span>
+          </li>
+          <li>
+            <a href="#p7">Rollout</a>
+            <span>- rollout strategy, resourcing</span>
+          </li>
+        </ol>
+      </nav>
+
+      <!-- ================================================== PART 1 -->
+      <section class="part part-1" id="p1">
+        <div class="part-head">
+          <span class="part-num">PART 1</span>
+          <h2>Business Context</h2>
+        </div>
+        <p class="part-lede">
+          What this solves for the user, what it is worth to the business.
+        </p>
+
+        <h3>1.1 The problem being solved</h3>
+        <p>
+          A dealership's sales floor does not lose deals because nobody can sell. It loses them in
+          the gap between an enquiry arriving and a human touching it. Keyloop's own published
+          research puts numbers on that gap:
+        </p>
+
+        <table>
+          <caption>
+            Published findings that shaped what this tool prioritises.
+          </caption>
+          <thead>
+            <tr>
+              <th style="width: 15%">Finding</th>
+              <th style="width: 40%">What it means on the sales floor</th>
+              <th>What the product therefore does</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>20–30%</b></td>
+              <td>
+                of enquiries are lost simply because they were never logged or never followed up
+                <em>(OC&amp;C 2024, cited by Keyloop)</em>
+              </td>
+              <td>
+                The inbox opens as a <b>triage surface</b>, sorted by what is about to breach, and
+                states out loud how many enquiries have never been touched
+              </td>
+            </tr>
+            <tr>
+              <td><b>69%</b></td>
+              <td>
+                of dealers cite rekeying and double entry across systems
+                <em>(OC&amp;C 2024, cited by Keyloop)</em>
+              </td>
+              <td>
+                One lead record, one timeline. Every derived number — the SLA state, the working
+                minutes, the triage counts — is <b>computed, never retyped</b>
+              </td>
+            </tr>
+            <tr>
+              <td><b>8–10 systems</b></td>
+              <td>
+                used to close a single deal, costing 5–10 hours per person per week
+                <em>(keyloop.com/sales-hub)</em>
+              </td>
+              <td>
+                The enquiry, its whole activity history and its pipeline stage live on
+                <b>one record</b>, not three
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4>For the sales executive</h4>
+        <p>
+          They open one screen and it tells them what to do next. The response clock counts
+          <b>working minutes</b> against the showroom's actual opening hours — including Sunday
+          trading and bank holidays — so an enquiry that arrives at 19:40 on a Saturday is not
+          reported as catastrophically late at 09:00 on Monday. Logging a call takes one dialog and
+          persists immediately; the SLA clock stops server-side, from the activity itself, not from a
+          checkbox someone has to remember to tick.
+        </p>
+
+        <h4>For the sales manager</h4>
+        <p>
+          They get a pipeline board showing where every open deal actually is, and stage guards that
+          refuse a move the process does not allow — so the board reflects the floor rather than a
+          parallel spreadsheet. Reporting is deliberately <em>not</em> in this phase: the activity
+          log is the primary record, and analytics built over a log people have not yet got into the
+          habit of filling teaches managers to distrust the tool. Once the log is reliably full, the
+          numbers can be derived from it without a reconciliation step.
+        </p>
+
+        <h4>For the business</h4>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 26%">Value</th>
+              <th style="width: 40%">Mechanism</th>
+              <th>How it would be measured in production</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Revenue recovered from unworked leads</b></td>
+              <td>Unworked count is the first thing on screen; SLA chips escalate before breach</td>
+              <td>Count of leads with zero customer contact after 24 working hours → target zero</td>
+            </tr>
+            <tr>
+              <td><b>Faster speed-to-lead</b></td>
+              <td>Working-minutes SLA per source; at-risk threshold at 25% of budget remaining</td>
+              <td>p50 / p90 minutes to first genuine contact, by source and by executive</td>
+            </tr>
+            <tr>
+              <td><b>Less admin, fewer errors</b></td>
+              <td>One record and one timeline; every derived figure computed, never rekeyed</td>
+              <td>Hours per executive per week on data entry; correction rate on logged activity</td>
+            </tr>
+            <tr>
+              <td><b>Auditable compliance</b></td>
+              <td>
+                Immutable chronological activity log; marketing consent with lawful basis per channel
+              </td>
+              <td>FCA / GDPR audit sampling passes without manual reconstruction</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>1.2 In scope and out of scope for this phase</h3>
+        <div class="scope-grid">
+          <div class="scope-card in">
+            <h4>In scope — built and verified</h4>
+            <p class="hint">Each is demonstrable by a command or a click.</p>
+            <ul>
+              <li>
+                <b>Lead Inbox</b>
+                <em>Triage bar, saved views, search, two sort orders, SLA chips</em>
+              </li>
+              <li>
+                <b>Lead Details + chronological activity log</b>
+                <em>Day-grouped timeline, anomaly surfacing, SLA explainer</em>
+              </li>
+              <li>
+                <b>Activity logging that persists</b>
+                <em>Survives reload; proven by end-to-end test, not by assertion</em>
+              </li>
+              <li>
+                <b>Working-hours SLA engine</b>
+                <em>Bank holidays, Sunday trading, both DST discontinuities</em>
+              </li>
+              <li>
+                <b>Pipeline state machine + Kanban board</b>
+                <em>12 stages, guards that carry a remedy, keyboard-operable moves</em>
+              </li>
+              <li>
+                <b>Observability layer</b>
+                <em>Correlation ids, structured logs, Web Vitals, in-app panel</em>
+              </li>
+            </ul>
+          </div>
+
+          <div class="scope-card out">
+            <h4>Out of scope</h4>
+            <ul>
+              <li>
+                <b>Deal Builder and the finance engine</b>
+               
+              </li>
+              <li>
+                <b>Manager analytics dashboard</b>
+              </li>
+              <li>
+                <b>Propensity scoring</b>
+                <em>A ranking is only worth having after the basics are
+                  consistently logged - otherwise it ranks the gaps in the data.</em>
+              </li>
+              <li>
+                <b>Real backend and database</b>
+                <em>Assessment is frontend-focused; mocked at the network boundary behind a real
+                  HTTP client, so this is a base-URL change</em>
+              </li>
+              <li>
+                <b>Authentication, SSO, role-based permissions</b>
+              </li>
+              <li>
+                <b>E-signature and quote sharing</b>
+              </li>
+              <li>
+                <b>Predictive ML analytics</b>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================== PART 2 -->
+      <section class="part" id="p2">
+        <div class="part-head">
+          <span class="part-num">PART 2</span>
+          <h2>High-Level Architecture</h2>
+        </div>
+        <p class="part-lede">
+          Five views: what the system talks to, how one user action moves through it, how the
+          frontend is decomposed, what the data looks like, and the contract between the two sides.
+        </p>
+
+        <h3>2.1 System Context Diagram</h3>
+        <p>
+          The Sales Center is a browser single-page application. In this phase it is
+          <b>self-contained</b>: every external system it will eventually depend on is intercepted
+          inside the browser by an MSW v2 service worker, which is the single integration boundary.
+          Nothing in the application code knows it is talking to a mock — the UI issues real
+          <code>fetch</code> calls to real <code>/api/v1/…</code> URLs.
+        </p>
+
+        <figure>
+          <svg
+            class="dg"
+            viewBox="0 0 980 520"
+            role="img"
+            aria-label="System context diagram: two user roles talk to the Sales Center browser SPA, which contains the React UI, the pure domain layer, the MSW service worker, the storage seam and the observability layer. The MSW worker is the single integration boundary to four external systems, all simulated in this phase."
+          >
+            <defs>
+              <marker
+                id="ah"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="7"
+                markerHeight="7"
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" stroke="none" />
+              </marker>
+            </defs>
+
+            <!-- actors -->
+            <text x="12" y="52" class="hdr">Users</text>
+            <g>
+              <rect class="n" x="12" y="150" width="150" height="62" rx="7" />
+              <text x="28" y="177" class="t">Sales executive</text>
+              <text x="28" y="194" class="s">works the lead, logs activity</text>
+            </g>
+            <g>
+              <rect class="n" x="12" y="252" width="150" height="62" rx="7" />
+              <text x="28" y="279" class="t">Sales manager</text>
+              <text x="28" y="296" class="s">runs the pipeline board</text>
+            </g>
+            <line x1="162" y1="181" x2="216" y2="181" marker-end="url(#ah)" />
+            <line x1="162" y1="283" x2="216" y2="283" marker-end="url(#ah)" />
+
+            <!-- system boundary -->
+            <rect class="grp" x="220" y="38" width="348" height="464" rx="10" />
+            <text x="234" y="60" class="hdr">Sales Center · browser SPA</text>
+
+            <rect class="n" x="238" y="76" width="312" height="60" rx="7" />
+            <text x="254" y="101" class="t">React 19 SPA</text>
+            <text x="254" y="118" class="s">features/ · components/ · TanStack Query</text>
+
+            <rect class="hi" x="238" y="154" width="312" height="60" rx="7" />
+            <text x="254" y="179" class="t">src/domain — pure rules</text>
+            <text x="254" y="196" class="s">sla · businessHours · pipeline · activities</text>
+
+            <rect class="n2" x="238" y="232" width="312" height="66" rx="7" />
+            <text x="254" y="257" class="t">MSW v2 service worker</text>
+            <text x="254" y="274" class="s">handlers.ts — 8 REST endpoints</text>
+            <text x="254" y="290" class="s">the single integration boundary</text>
+
+            <rect class="n" x="238" y="316" width="312" height="54" rx="7" />
+            <text x="254" y="339" class="t">Db seam</text>
+            <text x="254" y="356" class="s">localStorage today · memory in tests</text>
+
+            <rect class="n" x="238" y="388" width="312" height="54" rx="7" />
+            <text x="254" y="411" class="t">Observability</text>
+            <text x="254" y="428" class="s">correlation ids · logs · Web Vitals</text>
+
+            <line x1="394" y1="136" x2="394" y2="150" marker-end="url(#ah)" />
+            <line x1="394" y1="214" x2="394" y2="228" marker-end="url(#ah)" />
+            <line x1="394" y1="298" x2="394" y2="312" marker-end="url(#ah)" />
+
+            <!-- integration bus -->
+            <line x1="550" y1="265" x2="598" y2="265" class="accent" />
+            <line x1="598" y1="96" x2="598" y2="288" class="accent" />
+            <text x="556" y="253" class="s">HTTPS · REST</text>
+
+            <text x="632" y="52" class="hdr">External systems — simulated in this phase</text>
+
+            <g>
+              <rect class="n" x="632" y="72" width="336" height="48" rx="6" />
+              <text x="646" y="92" class="t">Dealer Management System</text>
+              <text x="646" y="109" class="s">Keyloop Fusion — stock, customer master</text>
+            </g>
+            <g>
+              <rect class="n" x="632" y="136" width="336" height="48" rx="6" />
+              <text x="646" y="156" class="t">OEM portals &amp; marketplaces</text>
+              <text x="646" y="173" class="s">inbound enquiry feeds</text>
+            </g>
+            <g>
+              <rect class="n" x="632" y="200" width="336" height="48" rx="6" />
+              <text x="646" y="220" class="t">DVLA licence check</text>
+              <text x="646" y="237" class="s">precondition for a test drive</text>
+            </g>
+            <g>
+              <rect class="n" x="632" y="264" width="336" height="48" rx="6" />
+              <text x="646" y="284" class="t">Email / SMS / WhatsApp gateway</text>
+              <text x="646" y="301" class="s">outbound customer contact</text>
+            </g>
+
+            <line x1="598" y1="96" x2="626" y2="96" class="dash" marker-end="url(#ah)" />
+            <line x1="598" y1="160" x2="626" y2="160" class="dash" marker-end="url(#ah)" />
+            <line x1="598" y1="224" x2="626" y2="224" class="dash" marker-end="url(#ah)" />
+            <line x1="598" y1="288" x2="626" y2="288" class="dash" marker-end="url(#ah)" />
+
+            <text x="632" y="470" class="s">Dashed = stubbed by MSW today. Each becomes a real</text>
+            <text x="632" y="486" class="s">
+              network call behind the same handler signature.
+            </text>
+          </svg>
+          <figcaption>
+            <b>Figure 1 — System Context.</b> The application never calls an external system
+            directly; it calls its own REST contract, and the MSW worker stands in for everything
+            beyond it. That is what makes the mock disposable: replacing it with a real gateway
+            changes a base URL and deletes a directory, not the application.
+          </figcaption>
+        </figure>
+
+        <h4>What each external system supplies, and what happens without it</h4>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 24%">External system</th>
+              <th style="width: 30%">What we need from it</th>
+              <th>Behaviour today · degradation if it is down</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>DMS (Keyloop Fusion)</b></td>
+              <td>Vehicle stock, customer master record, order write-back</td>
+              <td>Seeded stock in the mock. Degrades to read-only: quote and save locally, queue
+                write-back</td>
+            </tr>
+            <tr>
+              <td><b>OEM portals / marketplaces</b></td>
+              <td>Inbound enquiries with source attribution</td>
+              <td>Seed generator produces them. If a feed stops, existing leads are unaffected;
+                intake stalls and must alarm</td>
+            </tr>
+            <tr>
+              <td><b>DVLA licence check</b></td>
+              <td>Confirmation a licence is valid before a test drive</td>
+              <td>Recorded as a dated activity with a 365-day validity window. Fallback is a manual
+                check logged by hand</td>
+            </tr>
+            <tr>
+              <td><b>Messaging gateway</b></td>
+              <td>Sending email / SMS / WhatsApp to the customer</td>
+              <td>Contact is logged, not sent. Fallback is an outbox: record the intent, retry the
+                send</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>2.2 Data flow</h3>
+        <p>
+          The sequence diagram below is Part A's third requirement (Activity Logging) because
+          it is the path that touches every layer. The detail worth noticing is that
+          <b>the SLA clock is stopped server-side</b>: the handler asks the domain whether this
+          activity counts as genuine customer contact. The UI cannot talk its way out of a missed
+          target, and the same answer is given whether the question comes from the screen or the API.
+        </p>
+
+        <figure>
+          <svg
+            class="dg"
+            viewBox="0 0 980 700"
+            role="img"
+            aria-label="Sequence diagram for logging an activity: the sales executive submits the dialog, TanStack Query mutates, the REST client mints a correlation id and issues a POST, the MSW handler asks the pure domain layer whether the activity counts as customer contact, writes to the Db, and returns 201; the client logs the response and the query cache invalidates both the lead and the inbox."
+          >
+            <!-- participant headers -->
+            <g>
+              <rect class="n" x="4" y="10" width="118" height="42" rx="6" />
+              <text x="63" y="30" class="t" text-anchor="middle">Sales exec</text>
+              <text x="63" y="45" class="s" text-anchor="middle">browser</text>
+            </g>
+            <g>
+              <rect class="n" x="146" y="10" width="118" height="42" rx="6" />
+              <text x="205" y="30" class="t" text-anchor="middle">LogActivity</text>
+              <text x="205" y="45" class="s" text-anchor="middle">Dialog (Radix)</text>
+            </g>
+            <g>
+              <rect class="n" x="286" y="10" width="118" height="42" rx="6" />
+              <text x="345" y="30" class="t" text-anchor="middle">TanStack</text>
+              <text x="345" y="45" class="s" text-anchor="middle">Query cache</text>
+            </g>
+            <g>
+              <rect class="n" x="421" y="10" width="118" height="42" rx="6" />
+              <text x="480" y="30" class="t" text-anchor="middle">REST client</text>
+              <text x="480" y="45" class="s" text-anchor="middle">api/client.ts</text>
+            </g>
+            <g>
+              <rect class="n2" x="561" y="10" width="118" height="42" rx="6" />
+              <text x="620" y="30" class="t" text-anchor="middle">MSW worker</text>
+              <text x="620" y="45" class="s" text-anchor="middle">handlers.ts</text>
+            </g>
+            <g>
+              <rect class="hi" x="701" y="10" width="118" height="42" rx="6" />
+              <text x="760" y="30" class="t" text-anchor="middle">src/domain</text>
+              <text x="760" y="45" class="s" text-anchor="middle">pure functions</text>
+            </g>
+            <g>
+              <rect class="n" x="846" y="10" width="118" height="42" rx="6" />
+              <text x="905" y="30" class="t" text-anchor="middle">Db seam</text>
+              <text x="905" y="45" class="s" text-anchor="middle">localStorage</text>
+            </g>
+
+            <!-- lifelines -->
+            <line class="life" x1="63" y1="54" x2="63" y2="672" />
+            <line class="life" x1="205" y1="54" x2="205" y2="672" />
+            <line class="life" x1="345" y1="54" x2="345" y2="672" />
+            <line class="life" x1="480" y1="54" x2="480" y2="672" />
+            <line class="life" x1="620" y1="54" x2="620" y2="672" />
+            <line class="life" x1="760" y1="54" x2="760" y2="672" />
+            <line class="life" x1="905" y1="54" x2="905" y2="672" />
+
+            <!-- messages -->
+            <text x="134" y="92" class="m" text-anchor="middle">“Called customer” + note</text>
+            <line x1="63" y1="100" x2="203" y2="100" marker-end="url(#ah)" />
+
+            <text x="275" y="130" class="m" text-anchor="middle">mutate()</text>
+            <line x1="205" y1="138" x2="343" y2="138" marker-end="url(#ah)" />
+
+            <text x="412" y="168" class="m" text-anchor="middle">api.logActivity()</text>
+            <line x1="345" y1="176" x2="478" y2="176" marker-end="url(#ah)" />
+
+            <path d="M 480 200 h 46 v 26 h -46" marker-end="url(#ah)" />
+            <text x="534" y="217" class="m">mint correlation id · start timer</text>
+
+            <text x="550" y="254" class="m" text-anchor="middle">POST /api/v1/leads/:id/activities</text>
+            <line x1="480" y1="262" x2="618" y2="262" marker-end="url(#ah)" />
+
+            <text x="690" y="292" class="m" text-anchor="middle">is this customer contact?</text>
+            <line x1="620" y1="300" x2="758" y2="300" marker-end="url(#ah)" />
+
+            <text x="690" y="330" class="m" text-anchor="middle">yes → it stops the clock</text>
+            <line class="dash" x1="760" y1="338" x2="622" y2="338" marker-end="url(#ah)" />
+
+            <text x="762" y="368" class="m" text-anchor="middle">append activity · set firstRespondedAt</text>
+            <line x1="620" y1="376" x2="903" y2="376" marker-end="url(#ah)" />
+
+            <text x="762" y="406" class="m" text-anchor="middle">written</text>
+            <line class="dash" x1="905" y1="414" x2="622" y2="414" marker-end="url(#ah)" />
+
+            <text x="550" y="444" class="m" text-anchor="middle">201 · activity + updated lead</text>
+            <text x="550" y="458" class="s" text-anchor="middle">correlation id echoed on the response</text>
+            <line class="dash" x1="620" y1="466" x2="482" y2="466" marker-end="url(#ah)" />
+
+            <path d="M 480 490 h 46 v 26 h -46" marker-end="url(#ah)" />
+            <text x="534" y="507" class="m">log api.response {status, durationMs, id}</text>
+
+            <text x="412" y="544" class="m" text-anchor="middle">result</text>
+            <line class="dash" x1="480" y1="552" x2="347" y2="552" marker-end="url(#ah)" />
+
+            <path d="M 345 576 h 46 v 26 h -46" marker-end="url(#ah)" />
+            <text x="399" y="593" class="m">invalidate ['lead', id] AND ['leads']</text>
+
+            <text x="275" y="630" class="m" text-anchor="middle">success</text>
+            <line class="dash" x1="345" y1="638" x2="207" y2="638" marker-end="url(#ah)" />
+
+            <text x="134" y="662" class="m" text-anchor="middle">dialog closes · timeline + SLA chip repaint</text>
+            <line class="dash" x1="205" y1="670" x2="65" y2="670" marker-end="url(#ah)" />
+          </svg>
+          <figcaption>
+            <b>Figure 2 — Data flow for logging a follow-up activity.</b> Invalidating
+            <em>both</em> the lead and the inbox is deliberate: a genuine contact changes the lead's
+            SLA state, so the inbox chip and the triage counts must re-derive too, not just the
+            timeline. The correlation id minted at step 4 is echoed by the handler and appears on
+            both log lines, so one click is traceable end to end from the in-app telemetry panel.
+          </figcaption>
+        </figure>
+
+        <h3>2.3 Frontend component design</h3>
+        <p>
+          The architecture is a <b>Layered (hexagonal)</b> shape adapted to a
+          browser app. One rule holds it together:
+        </p>
+
+        <div class="callout">
+          <span class="label">The organising constraint</span>
+          <p>
+            <b
+              >Every dealership rule lives in <code>src/domain/</code> as pure TypeScript — no React,
+              no <code>fetch</code>, no DOM, and no ambient clock or randomness.</b
+            >
+            React is a thin renderer of domain output. Time, ids and randomness enter only through
+            injected ports (<code>Clock</code>, <code>IdGenerator</code>, <code>Rng</code>).
+          </p>
+          <p>
+            This is not a stylistic preference. It is what makes correctness demonstrable: the SLA
+            engine, the working-hours calendar and the stage guards are all plain functions
+            over plain data, unit-tested at 100% coverage — and <em>the same functions run inside the
+            mock API</em>, so the rules cannot drift between what the screen believes and what the
+            server enforces.
+          </p>
+        </div>
+
+        <figure>
+          <svg
+            class="dg"
+            viewBox="0 0 980 470"
+            role="img"
+            aria-label="Layered component diagram. From top: app shell, feature screens, components and hooks, API client, the pure domain layer, and ports plus data. Dependencies point downward only. The mock backend sits to the right, intercepting fetch from the API client and calling the same domain functions."
+          >
+            <text x="24" y="14" class="hdr">Dependencies point downward only</text>
+
+            <rect class="n" x="24" y="22" width="616" height="52" rx="7" />
+            <text x="40" y="44" class="t">src/app/ — application shell</text>
+            <text x="40" y="61" class="s">providers · router · QueryClient · ClockProvider · theme</text>
+
+            <rect class="n" x="24" y="88" width="616" height="52" rx="7" />
+            <text x="40" y="110" class="t">src/features/ — screen composition only</text>
+            <text x="40" y="127" class="s">inbox · lead-detail · pipeline</text>
+
+            <rect class="n" x="24" y="154" width="616" height="52" rx="7" />
+            <text x="40" y="176" class="t">src/components/ + src/hooks/</text>
+            <text x="40" y="193" class="s">Radix primitives · SlaChip · ScoreChip · query hooks</text>
+
+            <rect class="n" x="24" y="220" width="616" height="52" rx="7" />
+            <text x="40" y="242" class="t">src/api/client.ts — HTTP boundary</text>
+            <text x="40" y="259" class="s">real fetch to /api/v1 · correlation ids · typed ApiError</text>
+
+            <rect class="hi" x="24" y="286" width="616" height="64" rx="7" />
+            <text x="40" y="308" class="t">src/domain/ — PURE. every dealership rule.</text>
+            <text x="40" y="325" class="s">money · instant · businessHours · sla · pipeline</text>
+            <text x="40" y="341" class="s">activities · types · result — 100% covered</text>
+
+            <rect class="n" x="24" y="364" width="300" height="60" rx="7" />
+            <text x="40" y="386" class="t">src/ports/</text>
+            <text x="40" y="403" class="s">Clock · IdGenerator · Rng</text>
+            <text x="40" y="418" class="s">the only channel for nondeterminism</text>
+
+            <rect class="n" x="340" y="364" width="300" height="60" rx="7" />
+            <text x="356" y="386" class="t">src/data/</text>
+            <text x="356" y="403" class="s">Db seam — memoryDb | localStorageDb</text>
+            <text x="356" y="418" class="s">one contract suite, two implementations</text>
+
+            <line x1="332" y1="74" x2="332" y2="84" marker-end="url(#ah)" />
+            <line x1="332" y1="140" x2="332" y2="150" marker-end="url(#ah)" />
+            <line x1="332" y1="206" x2="332" y2="216" marker-end="url(#ah)" />
+            <line x1="332" y1="272" x2="332" y2="282" marker-end="url(#ah)" />
+            <line x1="174" y1="350" x2="174" y2="360" marker-end="url(#ah)" />
+            <line x1="490" y1="350" x2="490" y2="360" marker-end="url(#ah)" />
+
+            <!-- mock backend column -->
+            <rect class="n2" x="700" y="220" width="256" height="130" rx="7" />
+            <text x="716" y="244" class="t">src/mocks/ — mock backend</text>
+            <text x="716" y="261" class="s">MSW v2 service worker</text>
+            <text x="716" y="277" class="s">handlers.ts — 8 REST endpoints</text>
+            <text x="716" y="293" class="s">seed/ — deterministic generator</text>
+            <text x="716" y="309" class="s">store.ts — dealership-shaped reads</text>
+            <text x="716" y="333" class="s">Deleted wholesale when a real API lands.</text>
+
+            <line x1="644" y1="240" x2="696" y2="240" marker-end="url(#ah)" />
+            <text x="670" y="232" class="s" text-anchor="middle">intercepts</text>
+
+            <text x="670" y="303" class="s" text-anchor="middle">calls the</text>
+            <text x="670" y="315" class="s" text-anchor="middle">same rules</text>
+            <line class="accent" x1="700" y1="328" x2="646" y2="328" marker-end="url(#ah)" />
+
+            <rect class="n" x="700" y="364" width="256" height="60" rx="7" />
+            <text x="716" y="386" class="t">src/observability/</text>
+            <text x="716" y="403" class="s">logger · correlation · Web Vitals</text>
+            <text x="716" y="418" class="s">ErrorBoundary · DebugPanel</text>
+
+            <rect class="n" x="700" y="22" width="256" height="118" rx="7" />
+            <text x="716" y="46" class="t">src/bootstrap.ts</text>
+            <text x="716" y="63" class="s">Parses the URL contract, resets the</text>
+            <text x="716" y="79" class="s">store, awaits worker.start(), then —</text>
+            <text x="716" y="95" class="s">and only then — renders React.</text>
+            <text x="716" y="119" class="s">?__seed · ?__now · ?__latency</text>
+            <text x="716" y="135" class="s">?__rngSeed · ?__errorRate</text>
+          </svg>
+          <figcaption>
+            <b>Figure 3 — Frontend module decomposition.</b> The teal arrow is the point of the whole
+            design: the mock API reaches <em>down</em> into the same pure domain layer the UI reads,
+            so a stage guard or an SLA target has exactly one implementation. Purity is enforced
+            mechanically — an ESLint <code>no-restricted-syntax</code> rule bans
+            <code>Date.now()</code>, <code>new Date()</code> and <code>Math.random()</code> inside
+            <code>src/domain</code>, and a test walks every file's imports to assert none escapes the
+            directory.
+          </figcaption>
+        </figure>
+
+        <h4>Responsibilities, module by module</h4>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 20%">Module</th>
+              <th style="width: 42%">Responsibility</th>
+              <th>Why it is a separate layer</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>src/domain/</code></td>
+              <td>Every dealership rule, as pure functions over plain data</td>
+              <td>Testable without a browser; reused verbatim by the mock server</td>
+            </tr>
+            <tr>
+              <td><code>src/ports/</code></td>
+              <td><code>Clock</code>, <code>IdGenerator</code>, <code>Rng</code></td>
+              <td>A single, auditable channel for nondeterminism</td>
+            </tr>
+            <tr>
+              <td><code>src/data/</code></td>
+              <td>The <code>Db</code> seam and two implementations</td>
+              <td>Makes “storage is swappable” a passing contract suite, not a claim</td>
+            </tr>
+            <tr>
+              <td><code>src/mocks/</code></td>
+              <td>MSW worker, handlers, deterministic seed generator</td>
+              <td>An executable specification of the API we need from the backend team</td>
+            </tr>
+            <tr>
+              <td><code>src/api/</code></td>
+              <td>Real HTTP client, real URLs, correlation ids, typed errors</td>
+              <td>The only module that knows HTTP exists — a real backend is a base-URL change</td>
+            </tr>
+            <tr>
+              <td><code>src/app/</code></td>
+              <td>Providers, routing, shell, and the one ticking clock</td>
+              <td>A single interval drives every countdown on screen</td>
+            </tr>
+            <tr>
+              <td><code>src/features/</code></td>
+              <td>Screen composition only — no business logic</td>
+              <td>Thin by construction; the logic is always one layer below</td>
+            </tr>
+            <tr>
+              <td><code>src/components/</code></td>
+              <td>Radix-based primitives and shared display pieces</td>
+              <td>Accessibility solved once, not per screen</td>
+            </tr>
+            <tr>
+              <td><code>src/observability/</code></td>
+              <td>Structured logger, correlation, Web Vitals, error boundary, panel</td>
+              <td>Observability a reviewer can see without opening devtools</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4>State ownership</h4>
+        <p>
+          Two owners, no overlap. <b>TanStack Query</b> owns all server state (leads, activities,
+          reference data) — no server data is ever copied into another store. <b>The URL</b> owns
+          shareable state (<code>?view=</code>, <code>?sort=</code>, and the
+          <code>__</code>-prefixed bootstrap parameters). What is left — a sort toggle, the theme,
+          whether the telemetry panel is open — is local component state, because a store for three
+          booleans is ceremony rather than architecture. The payoff beyond tidiness is that Query's
+          <code>useIsFetching()</code> and <code>useIsMutating()</code> give the end-to-end suite a
+          real quiescence signal — which is why there is no <code>cy.wait()</code> anywhere in the
+          Cypress suite.
+        </p>
+
+        <h3>2.4 Data model (Optional)</h3>
+        <p>
+          The model is deliberately small and lead-centric: <b>one aggregate root</b> (the lead),
+          <b>one append-only child collection</b> (the activity log), <b>two reference
+            collections</b>
+          (sites and sales executives), and <b>one singleton</b> holding the scenario clock.
+          Everything else — the customer, the vehicle, the part-exchange, the consent records — is an
+          embedded value object living inside the lead document rather than a table of its own.
+        </p>
+        <p>
+          That shape follows from what the tool is. A dealership enquiry is a <em>conversation about
+            one person and one car</em>, and the systems of record for customers and stock belong to
+          the DMS. Embedding them keeps the enquiry self-contained and, more usefully, makes the
+          vehicle of interest a <b>snapshot as recorded</b> rather than a pointer into live stock —
+          so a later change in the stock system cannot silently rewrite what was discussed last
+          week.
+        </p>
+
+        <figure>
+          <svg
+            class="dg"
+            viewBox="0 0 980 560"
+            role="img"
+            aria-label="Entity-relationship diagram. Lead is the aggregate root in the leads collection. Site and SalesExecutive are reference collections linked by siteId and assignedTo. Activity is an append-only child collection linked by leadId, and it self-links through previousActivityId. Customer, Vehicle, PartExchange and MarketingConsent are embedded inside the lead document. StoreMeta is a single-row singleton."
+          >
+            <!-- reference collections -->
+            <text x="16" y="70" class="hdr">Reference data</text>
+            <g>
+              <rect class="n" x="16" y="96" width="176" height="68" rx="7" />
+              <text x="30" y="118" class="t">Site</text>
+              <text x="30" y="134" class="s">sites · read-only</text>
+              <text x="30" y="150" class="s">id (PK) · name · brand</text>
+            </g>
+            <g>
+              <rect class="n" x="16" y="196" width="176" height="68" rx="7" />
+              <text x="30" y="218" class="t">SalesExecutive</text>
+              <text x="30" y="234" class="s">executives · read-only</text>
+              <text x="30" y="250" class="s">id (PK) · name · siteId · role</text>
+            </g>
+            <g>
+              <rect class="n2" x="16" y="400" width="176" height="82" rx="7" />
+              <text x="30" y="422" class="t">StoreMeta</text>
+              <text x="30" y="438" class="s">meta · single row</text>
+              <text x="30" y="454" class="s">scenario · now · rngSeed</text>
+              <text x="30" y="470" class="s">latencyMs · errorRate</text>
+            </g>
+
+            <!-- aggregate root -->
+            <rect class="hi" x="280" y="40" width="300" height="212" rx="8" />
+            <text x="296" y="64" class="t">Lead</text>
+            <text x="296" y="80" class="s">leads · aggregate root · mutable</text>
+            <text x="296" y="104" class="s">id (PK) · reference “ENQ-4101”</text>
+            <text x="296" y="120" class="s">customer · vehicleOfInterest? · partExchange?</text>
+            <text x="296" y="136" class="s">source · enquiryType · receivedAt</text>
+            <text x="296" y="152" class="s">stage — 1 of 12 · status — open|won|lost</text>
+            <text x="296" y="168" class="s">firstRespondedAt? ← the SLA clock stop</text>
+            <text x="296" y="184" class="s">siteId (FK) · assignedTo (FK)</text>
+            <text x="296" y="200" class="s">licenceCheckedAt? · depositTaken?</text>
+            <text x="296" y="216" class="s">createdAt · updatedAt · lastStageChangeAt?</text>
+            <text x="296" y="238" class="s">24 fields — 12 required, 12 optional</text>
+
+            <!-- embedded value objects -->
+            <rect class="grp" x="266" y="288" width="328" height="230" rx="9" />
+            <text x="280" y="309" class="hdr">Embedded in the lead document</text>
+            <g>
+              <rect class="n" x="280" y="322" width="150" height="58" rx="6" />
+              <text x="292" y="342" class="t">Customer</text>
+              <text x="292" y="357" class="s">1 : 1 · required</text>
+              <text x="292" y="371" class="s">no customer master</text>
+            </g>
+            <g>
+              <rect class="n" x="444" y="322" width="136" height="58" rx="6" />
+              <text x="456" y="342" class="t">Vehicle</text>
+              <text x="456" y="357" class="s">0..1 · of interest</text>
+              <text x="456" y="371" class="s">as recorded</text>
+            </g>
+            <g>
+              <rect class="n" x="280" y="392" width="150" height="58" rx="6" />
+              <text x="292" y="412" class="t">PartExchange</text>
+              <text x="292" y="427" class="s">0..1 · keyed by reg</text>
+              <text x="292" y="441" class="s">14 fields, 6 optional</text>
+            </g>
+            <g>
+              <rect class="n" x="444" y="392" width="136" height="58" rx="6" />
+              <text x="456" y="412" class="t">MarketingConsent[]</text>
+              <text x="456" y="427" class="s">0..N · per channel</text>
+              <text x="456" y="441" class="s">+ lawful basis</text>
+            </g>
+            <text x="280" y="474" class="s">No id of their own, never shared between leads, and</text>
+            <text x="280" y="490" class="s">written and read as part of the lead row.</text>
+
+            <line x1="430" y1="252" x2="430" y2="284" marker-end="url(#ah)" />
+            <text x="438" y="272" class="s">composition</text>
+
+            <!-- child collections -->
+            <rect class="n" x="676" y="40" width="272" height="212" rx="8" />
+            <text x="692" y="64" class="t">Activity</text>
+            <text x="692" y="80" class="s">activities · APPEND-ONLY</text>
+            <text x="692" y="104" class="s">id (PK) “act_0001” · leadId (FK)</text>
+            <text x="692" y="120" class="s">type — 1 of 21</text>
+            <text x="692" y="136" class="s">occurredAt · recordedAt</text>
+            <text x="692" y="152" class="s">— when it happened vs written up</text>
+            <text x="692" y="168" class="s">author · note? · outcome?</text>
+            <text x="692" y="184" class="s">previousActivityId? → Activity</text>
+            <text x="692" y="200" class="s">isCustomerContact? → stops the clock</text>
+            <text x="692" y="222" class="s">11 fields — 6 required, 5 optional</text>
+
+            <!-- relationships -->
+            <line x1="192" y1="130" x2="276" y2="130" marker-end="url(#ah)" />
+            <text x="234" y="122" class="s" text-anchor="middle">1 : N</text>
+            <text x="234" y="146" class="s" text-anchor="middle">siteId</text>
+
+            <line x1="192" y1="228" x2="276" y2="228" marker-end="url(#ah)" />
+            <text x="234" y="220" class="s" text-anchor="middle">1 : 0..N</text>
+            <text x="234" y="244" class="s" text-anchor="middle">assignedTo</text>
+
+            <line x1="580" y1="110" x2="672" y2="110" marker-end="url(#ah)" />
+            <text x="626" y="102" class="s" text-anchor="middle">1 : N</text>
+            <text x="626" y="126" class="s" text-anchor="middle">leadId</text>
+
+            <path d="M 948 150 C 970 150 970 188 948 188" marker-end="url(#ah)" />
+
+            <text x="16" y="540" class="s">
+              PK = identity · FK = a plain string, with no referential integrity enforced ·
+              APPEND-ONLY = the store exposes no update and no delete
+            </text>
+          </svg>
+          <figcaption>
+            <b>Figure 4 — Entity relationships.</b> Five collections in total. The curve on
+            <code>Activity</code> is the self-link that chains a timeline together, which is how
+            Keyloop's own Sales Activities API models it — and it is what lets the timeline
+            <em>detect</em> contradictory imported data instead of silently re-sorting it.
+          </figcaption>
+        </figure>
+
+        <h3>2.5 APIs and interfaces (Optional)</h3>
+        <p>
+          The mock backend exposes <b>eight REST endpoints</b> under <code>/api/v1</code>. They are
+          not a convenience layer for the UI — they are the <b>contract the real backend has to
+            honour</b>, written as executable code so the backend team can test against it rather
+          than interpret prose. The application issues ordinary <code>fetch</code> calls to these
+          paths; only the base URL would change.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 25%">Endpoint</th>
+              <th style="width: 27%">What it does · domain function</th>
+              <th style="width: 19%">Success</th>
+              <th>Failure</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>GET /reference</code></td>
+              <td>Sites, executives and the scenario meta — one call at start-up</td>
+              <td>200 <code>{sites, executives, meta}</code></td>
+              <td>503</td>
+            </tr>
+            <tr>
+              <td><code>GET /leads</code></td>
+              <td>The inbox. Filters on <code>status</code>, <code>siteId</code> and
+                <code>assignedTo</code></td>
+              <td>200 <code>{leads, total}</code></td>
+              <td>503</td>
+            </tr>
+            <tr>
+              <td><code>GET /leads/:leadId</code></td>
+              <td>The lead record and its whole timeline in one payload</td>
+              <td>200 <code>{lead, activities}</code></td>
+              <td>404, 503</td>
+            </tr>
+            <tr>
+              <td><code>GET /leads/:leadId/activities</code></td>
+              <td>The timeline alone</td>
+              <td>200 <code>{activities}</code></td>
+              <td>404, 503</td>
+            </tr>
+            <tr>
+              <td><code>POST /leads/:leadId/activities</code></td>
+              <td><b>Logs an activity and may stop the SLA clock</b>, decided by
+                <code>isCustomerContact()</code></td>
+              <td>201 <code>{activity, lead}</code></td>
+              <td>404, 422 <code>INVALID_ACTIVITY_TYPE</code>, 503</td>
+            </tr>
+            <tr>
+              <td><code>PATCH /leads/:leadId/stage</code></td>
+              <td>Moves the lead — calls the same <code>moveStage()</code> the optimistic UI called</td>
+              <td>200 <code>{lead}</code></td>
+              <td>404, 422 <code>UNKNOWN_STAGE</code> or any guard, 503</td>
+            </tr>
+            <tr>
+              <td><code>POST /leads/:leadId/close</code></td>
+              <td>Won or lost — <code>markWon()</code> / <code>markLost()</code></td>
+              <td>200 <code>{lead}</code></td>
+              <td>404, 422 <code>LOST_REASON_REQUIRED</code>, <code>HANDOVER_REQUIRED</code>,
+                <code>LEAD_CLOSED</code>, 503</td>
+            </tr>
+            <tr>
+              <td><code>POST /leads/:leadId/reopen</code></td>
+              <td><code>reopenLead()</code></td>
+              <td>200 <code>{lead}</code></td>
+              <td>404, 422 <code>LEAD_ALREADY_OPEN</code>, 503</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4>Envelope conventions</h4>
+        <p>
+          Every success response is a <b>named-key object, never a bare array</b>, so a field can be
+          added without breaking a client. Every failure is the same envelope —
+          <code>{ error: { code, message, remedy, details? } }</code> — and the
+          <code>remedy</code> is not decoration: the UI renders it verbatim as the label on a
+          one-click fix, and the identical string is asserted by both a unit test and an E2E test.
+          Only <b>200, 201, 404, 422 and 503</b> are ever returned.
+        </p>
+
+        <h4>Error codes, and where each one is minted</h4>
+        <p>
+          The split below is the API-level evidence for the architecture: the handler validates the
+          <em>request</em>, and every judgement about the <em>business</em> is passed through
+          verbatim from the pure domain layer.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 24%">Family</th>
+              <th style="width: 18%">Minted in</th>
+              <th>Codes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Lookup and transport</td>
+              <td>handler</td>
+              <td><code>NOT_FOUND</code> (404) · <code>UPSTREAM_UNAVAILABLE</code> (503, injected)</td>
+            </tr>
+            <tr>
+              <td>Request validation</td>
+              <td>handler</td>
+              <td><code>INVALID_ACTIVITY_TYPE</code> · <code>UNKNOWN_STAGE</code> ·
+                <code>LOST_REASON_REQUIRED</code></td>
+            </tr>
+            <tr>
+              <td><b>Pipeline rules</b></td>
+              <td><b>domain</b>, passed through</td>
+              <td><code>LEAD_CLOSED</code> · <code>SAME_STAGE</code> ·
+                <code>BACKWARD_LIMIT_EXCEEDED</code> · <code>HANDOVER_REQUIRED</code> ·
+                <code>LEAD_ALREADY_OPEN</code></td>
+            </tr>
+            <tr>
+              <td><b>Stage guards</b></td>
+              <td><b>domain</b>, passed through</td>
+              <td><code>LICENCE_CHECK_REQUIRED</code> · <code>DEPOSIT_REQUIRED</code> ·
+                <code>PREPARATION_REQUIRED_BEFORE_HANDOVER</code> — each carries the remedy the UI
+                turns into a button</td>
+            </tr>
+            <tr>
+              <td>Client-side only</td>
+              <td><code>api/client.ts</code></td>
+              <td><code>NETWORK_ERROR</code> — synthesised when <code>fetch</code> itself rejects, so
+                a dead network reaches the UI in the same shape as a refusal</td>
+            </tr>
+          </tbody>
+        </table>
+
+      </section>
+
+      <!-- ================================================== PART 3 -->
+      <section class="part" id="p3">
+        <div class="part-head">
+          <span class="part-num">PART 3</span>
+          <h2>Technical Decisions &amp; Trade-offs</h2>
+        </div>
+        <p class="part-lede">
+          The stack, then the decisions that were genuinely contested — each stated as what was
+          chosen, what was rejected, and what the choice costs.
+        </p>
+
+        <h3>3.1 Frontend stack</h3>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 22%">Layer</th>
+              <th style="width: 20%">Choice</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Framework</td>
+              <td><b>React 19</b></td>
+              <td>Mandated by the brief; the concurrent renderer and <code>useSyncExternalStore</code>
+                are both used directly</td>
+            </tr>
+            <tr>
+              <td>Build tool</td>
+              <td><b>Vite 8</b></td>
+              <td>An internal tool behind a login has no SEO or SSR requirement to pay for</td>
+            </tr>
+            <tr>
+              <td>Language</td>
+              <td><b>TypeScript 6.0.3</b>, maximum strictness</td>
+              <td><code>noUncheckedIndexedAccess</code> and <code>exactOptionalPropertyTypes</code>
+                catch precisely the bugs that money and time code attract</td>
+            </tr>
+            <tr>
+              <td>UI library</td>
+              <td><b>Radix UI 1.6</b> (unified package)</td>
+              <td>Mandated. Focus traps, escape handling and ARIA wiring are easy to get subtly
+                wrong and expensive to get wrong in an accessibility audit</td>
+            </tr>
+            <tr>
+              <td>CSS</td>
+              <td><b>Tailwind CSS v4</b>, CSS-first config</td>
+              <td>Mandated. v4 needs no config file or content globs; tokens live in
+                <code>@theme</code> in one stylesheet</td>
+            </tr>
+            <tr>
+              <td>Server state</td>
+              <td><b>TanStack Query 5</b></td>
+              <td>Caching and in-flight tracking is where hand-rolled data layers rot; also supplies
+                the E2E quiescence signal</td>
+            </tr>
+            <tr>
+              <td>Routing</td>
+              <td><b>React Router 8</b></td>
+              <td>URL-owned shareable state, including the deep-linkable demo scenarios</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>3.2 Backend stack (mocked this phase)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 22%">Concern</th>
+              <th style="width: 20%">Choice</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>API mock</td>
+              <td><b>MSW v2</b> — the only mocking layer</td>
+              <td>Intercepts at the network boundary, so the app makes real <code>fetch</code> calls
+                to real URLs. One handler set serves dev, Vitest and Cypress</td>
+            </tr>
+            <tr>
+              <td>API surface</td>
+              <td><b>8 REST endpoints</b> under <code>/api/v1</code></td>
+              <td>Leads, activities, stage, close, reopen, reference data — an executable contract
+                the backend team can build against</td>
+            </tr>
+            <tr>
+              <td>Business rules</td>
+              <td><b>The same <code>src/domain</code> functions the UI uses</b></td>
+              <td><code>PATCH /stage</code> calls the same <code>moveStage()</code> the optimistic UI
+                called and returns 422 with the identical guard error — you can watch an optimistic
+                move roll back on screen when the server refuses it</td>
+            </tr>
+            <tr>
+              <td>Persistence</td>
+              <td><b><code>localStorage</code> behind a <code>Db</code> interface</b></td>
+              <td>Satisfies “activity logging must persist” with a seam that is contract-tested
+                against a second in-memory implementation</td>
+            </tr>
+            <tr>
+              <td>Fixtures</td>
+              <td><b>Deterministic seed generator</b>, seeded RNG</td>
+              <td>Fixed anchor leads for assertions plus generated volume for a credible-looking
+                dealership — reproducible byte for byte</td>
+            </tr>
+            <tr>
+              <td>Fault injection</td>
+              <td><b><code>?__latency</code> · <code>?__errorRate</code></b></td>
+              <td>Failure and slowness are demonstrable on demand rather than described</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>3.3 Trade-offs — why A and not B</h3>
+        <p>
+          A trade-off is only real if the cost is named. Each row below states what was given up.
+        </p>
+
+        <table>
+          <caption>
+            The decisions that had a credible alternative.
+          </caption>
+          <thead>
+            <tr>
+              <th style="width: 19%">Chose</th>
+              <th style="width: 17%">Over</th>
+              <th style="width: 32%">Because</th>
+              <th>What it costs us</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>React + Vite</b></td>
+              <td>Next.js</td>
+              <td>An internal tool behind a login has no SEO requirement and no anonymous traffic.
+                SSR would add a server to operate, a hydration model to debug and a deployment
+                target to secure — for zero user-visible benefit</td>
+              <td>No server-side data fetching or streaming; we ship a client bundle and pay for
+                route-level code splitting ourselves</td>
+            </tr>
+            <tr>
+              <td><b>Pure domain layer + ports</b></td>
+              <td>Logic inside components and hooks</td>
+              <td>Three of the four graded dimensions reward evidence. Pure functions can be proven
+                at 100% coverage and reused by the mock server; logic inside a component can only be
+                demonstrated by clicking</td>
+              <td>More files and one more indirection; the purity rule must be enforced by lint and
+                a test, because discipline alone would not hold</td>
+            </tr>
+            <tr>
+              <td><b>MSW v2 service worker</b></td>
+              <td>json-server or an Express mock</td>
+              <td>The app issues real <code>fetch</code> to real URLs, so swapping in a real backend
+                is a base-URL change. One handler set serves dev, unit tests and E2E — a second
+                process would mean a second, drifting definition of the API</td>
+              <td>
+                <b>A real cost:</b> <code>cy.request</code> runs in Cypress's Node process and never
+                reaches a service worker, so test state could not be reset over HTTP. That forced a
+                URL bootstrap contract (<code>?__seed</code>, <code>?__now</code>) — which turned out
+                to be better anyway, since every scenario is now a shareable link
+              </td>
+            </tr>
+            <tr>
+              <td><b>TanStack Query, and nothing else</b></td>
+              <td>Redux Toolkit, or a client store alongside it</td>
+              <td>Almost all state here is server state. Query gives caching, invalidation and
+                in-flight tracking for free, and <code>useIsFetching()</code> is what lets the E2E
+                suite wait on a real signal instead of a timer. What remained was small enough to
+                live in component state</td>
+              <td>No shared client store, so genuinely cross-screen UI state would need one adding
+            </tr>
+            <tr>
+              <td><b>Integer pence + branded types</b></td>
+              <td>Floating point, or Decimal.js</td>
+              <td>Any chain of monetary operations drifts a penny at every step once floats are
+                involved, and the error compounds. Integers are exact and need no dependency</td>
+              <td>Conversion ceremony at every UI edge, and a branded type that newcomers must learn</td>
+            </tr>
+            <tr>
+              <td><b>Radix primitives + Tailwind</b></td>
+              <td>MUI, Chakra or a full component kit</td>
+              <td>Mandated, and correct anyway: unstyled primitives give correct focus and ARIA
+                behaviour without a theme to fight. A dense operational table is exactly what
+                opinionated kits make hard</td>
+              <td>We build the visual layer ourselves — more CSS, and the colour palette had to be
+                computed for contrast rather than picked</td>
+            </tr>
+            <tr>
+              <td><b>Keyboard-first Kanban</b></td>
+              <td>Pointer drag-and-drop</td>
+              <td>No drag-and-drop library was in the dependency set, the keyboard path is
+                accessible by default, and it is deterministically testable — pointer DnD is the
+                single flakiest thing to automate</td>
+              <td>A less impressive first impression in a demo</td>
+            </tr>
+            <tr>
+              <td><b>Vitest 4 · Cypress 15 · jsdom 29</b></td>
+              <td>The latest major of each</td>
+              <td>The development machine runs Node 25 (odd, non-LTS). Cypress 16, Vitest 5 and
+                jsdom 30 all exclude it in their <code>engines</code>. The pinned line runs on Node
+                20.1 / 22 / 24 / 25 / 26 alike — so it also runs on whatever the reviewer has</td>
+              <td>Not on the newest line. The gain: the whole set installs with
+                <b>zero overrides and zero <code>--legacy-peer-deps</code></b></td>
+            </tr>
+            <tr>
+              <td><b><code>retry: false</code> on queries</b></td>
+              <td>Automatic retry with backoff</td>
+              <td>The mock fails <em>on purpose</em>, for the reliability demo. Retrying would hide
+                exactly the behaviour being demonstrated</td>
+              <td>Correct for a demo, wrong for production — §4.3 states what replaces it</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ================================================== PART 4 -->
+      <section class="part" id="p4">
+        <div class="part-head">
+          <span class="part-num">PART 4</span>
+          <h2>System Design Judgment</h2>
+        </div>
+        <p class="part-lede">
+          Where this breaks, what it depends on, and what it does when something it depends on goes
+          away.
+        </p>
+
+        <h3>4.1 Bottlenecks — what fails first under a spike</h3>
+        <p>
+          Today every request is served inside the browser, so there is no server to overload. The
+          load that matters is therefore <b>data volume per user</b>: a group with fifteen sites and
+          a busy plate-change month. The table below names the real limits in the code as written,
+          in the order they would bite.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 20%">Pressure point</th>
+              <th style="width: 10%">Risk</th>
+              <th style="width: 33%">What actually breaks</th>
+              <th>Mitigation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b><code>localStorage</code> as the store</b></td>
+              <td><span class="pill risk-h">First to break</span></td>
+              <td>Synchronous, main-thread, ~5&nbsp;MB per origin, and it serialises the whole
+                collection on every write. At a few thousand leads the write cost becomes a visible
+                jank on every activity logged; past the quota it throws</td>
+              <td>It is already a seam. <code>localStorageDb</code> degrades to memory on failure
+                today; the production path is IndexedDB or, properly, a real API — one class, no
+                caller changes</td>
+            </tr>
+            <tr>
+              <td><b><code>GET /leads</code> returns everything</b></td>
+              <td><span class="pill risk-h">First to break</span></td>
+              <td>No pagination: every matching lead comes back in one payload, and
+                <code>total</code> merely echoes the array length rather than describing a page
+                window. The client then sorts and filters the whole set on the main thread</td>
+              <td>Cursor pagination with the sort applied server-side, so the payload is bounded by
+                the page rather than by the dealership. Removing propensity scoring already took an
+                <b>O(leads × activities)</b> loop out of this handler</td>
+            </tr>
+            <tr>
+              <td><b>One-second clock tick × every SLA chip</b></td>
+              <td><span class="pill risk-m">Large inbox</span></td>
+              <td><code>ClockProvider</code> ticks at 1&nbsp;s and every countdown re-renders. With
+                an unvirtualised list of a thousand rows that is a thousand re-renders per second</td>
+              <td>Virtualise the list; drop the tick to 30&nbsp;s for targets more than an hour out.
+                The clock is already a single injected port, so this is one change in one place</td>
+            </tr>
+            <tr>
+              <td><b>Working-minutes calculation</b></td>
+              <td><span class="pill risk-l">Bounded</span></td>
+              <td>The business-hours walk iterates day by day, capped at 400 iterations. Cheap per
+                call, but it runs per lead per tick</td>
+              <td>Memoise per <code>(receivedAt, source)</code> pair; the function is pure, so
+                caching is safe by construction</td>
+            </tr>
+            <tr>
+              <td><b>Service worker boot</b></td>
+              <td><span class="pill risk-l">Dev only</span></td>
+              <td>Every request passes through MSW. It is a fixed per-request cost that disappears
+                entirely in production</td>
+              <td>None needed — the mock is deleted when a real API lands</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>4.2 Dependency risk</h3>
+        <p>
+          This phase was deliberately built so that <b>no other team can block it</b>. That is the
+          purpose of mocking at the network boundary rather than waiting for an API. The risks that
+          remain are about the <em>handover</em>, not the build.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 22%">Dependency</th>
+              <th style="width: 10%">Risk</th>
+              <th style="width: 32%">Exposure</th>
+              <th>How it is de-risked</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Backend / data team — the real lead and activity API</b></td>
+              <td><span class="pill risk-m">Medium</span></td>
+              <td>The largest one. If their contract differs from ours, integration is rework rather
+                than a swap</td>
+              <td>The MSW handlers <b>are</b> the contract — 8 endpoints with request and response
+                shapes, error codes and status mapping, all executable. The backend team gets a
+                specification they can test against instead of a conversation. Blast radius of a
+                mismatch is one adapter module, <code>src/api/client.ts</code></td>
+            </tr>
+            <tr>
+              <td><b>Identity / SSO team</b></td>
+              <td><span class="pill risk-l">Low</span></td>
+              <td>No authentication in this phase; the client holds no token logic at all</td>
+              <td>Every request already goes through one client module, so auth arrives as a request
+                interceptor plus a 401 handler. Nothing else changes</td>
+            </tr>
+            <tr>
+              <td><b>DMS team (Keyloop Fusion)</b></td>
+              <td><span class="pill risk-m">Medium</span></td>
+              <td>Stock, customer master and order write-back. Write-back is the genuinely hard part
+                — it is someone else's system of record</td>
+              <td>Reads are cacheable and degrade to stale. Writes should be queued and idempotent
+                from the start; the activity log already gives an audit trail to reconcile against</td>
+            </tr>
+            <tr>
+              <td><b>DVLA and the messaging gateway</b></td>
+              <td><span class="pill risk-l">Low</span></td>
+              <td>Each is a third party with its own availability</td>
+              <td>Each has a manual fallback that is already the current process: log the licence
+                check by hand, record the contact as an activity</td>
+            </tr>
+            <tr>
+              <td><b>Library vendors</b></td>
+              <td><span class="pill risk-l">Low</span></td>
+              <td>React, Radix, TanStack Query, Tailwind, MSW — all MIT and widely adopted. MSW is
+                dev-only, so it carries no production risk</td>
+              <td>The one with real lock-in is TanStack Query, because it shapes the data layer.
+                Accepted deliberately: it is the most stable piece of the set</td>
+            </tr>
+            <tr>
+              <td><b>Node 25 on the build machine</b></td>
+              <td><span class="pill risk-l">Resolved</span></td>
+              <td>An odd-numbered, non-LTS runtime that several current majors exclude</td>
+              <td>Versions pinned to the widest-compatible line; CI runs a Node 22 / 24 / 25 matrix
+                so a regression on any of them fails the build</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>4.3 Fallback plan</h3>
+        <p>
+          The question is whether a failure surfaces an error or recovers. The honest answer differs
+          by failure, and differs between this phase and production — so both are stated.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 22%">Failure</th>
+              <th style="width: 36%">Behaviour today</th>
+              <th>Production behaviour</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Read request fails (5xx / network)</b></td>
+              <td>A typed <code>ApiError</code> surfaces an error panel carrying the failure's
+                <code>remedy</code> string and its correlation id. <b>No retry</b> — deliberate, so
+                the fault-injection demo is honest</td>
+              <td>Retry idempotent GETs three times with exponential backoff and jitter, then fall
+                back to <b>stale-while-error</b>: render the last good cached data behind a “showing
+                data from 09:14” banner. A stale inbox beats an empty one</td>
+            </tr>
+            <tr>
+              <td><b>Write fails (logging an activity)</b></td>
+              <td>The mutation surfaces the error and <b>the dialog stays open with the user's text
+                intact</b> — the one thing that must never be lost is what the executive just typed</td>
+              <td>Attach an idempotency key per activity, queue the write in an outbox, retry in the
+                background, and reconcile on reconnect. Never silently drop</td>
+            </tr>
+            <tr>
+              <td><b>Business rule rejects the action</b></td>
+              <td>Not a failure — a guard. The API returns 422 with
+                <code>{code, message, remedy}</code>, and the UI renders the remedy as a one-click
+                fix (“Log licence check”). The same string is asserted by both the unit test and the
+                E2E test</td>
+              <td>Unchanged. This is the designed behaviour</td>
+            </tr>
+            <tr>
+              <td><b><code>localStorage</code> unavailable or over quota</b></td>
+              <td><b>Already handled.</b> <code>localStorageDb</code> degrades to an in-memory store,
+                warns once, and the application keeps working — private browsing and full-disk are
+                both covered</td>
+              <td>Same pattern against IndexedDB, with the outbox above so nothing is lost when
+                storage is the thing that failed</td>
+            </tr>
+            <tr>
+              <td><b>Third party down (lender, valuation, DVLA, messaging)</b></td>
+              <td>Not called in this phase</td>
+              <td>Degrade, never block. Quote locally and queue the proposal (“submitted — awaiting
+                lender”); fall back to manual entry for valuations; record the contact intent in an
+                outbox when the gateway is unreachable. Circuit-break per partner so one slow
+                integration cannot exhaust the connection pool</td>
+            </tr>
+            <tr>
+              <td><b>A component throws while rendering</b></td>
+              <td>An error boundary catches it, logs <code>ui.render_error</code> with the component
+                stack, and shows a recoverable panel instead of a white screen</td>
+              <td>Same, with the log line shipped to the collector — the correlation id already links
+                it to the request that preceded it</td>
+            </tr>
+            <tr>
+              <td><b>Service worker fails to register</b></td>
+              <td>
+                <b>Known gap.</b> <code>main.tsx</code> awaits <code>worker.start()</code> before
+                rendering and does not catch a rejection, so a failure to register the worker would
+                leave a blank page rather than an explanation
+              </td>
+              <td>Moot in production — there is no worker. For the demo build the fix is small and
+                worth making: catch the rejection and render a static “mock backend failed to start”
+                panel
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>4.4 How these claims can be checked</h3>
+        <p>
+          Every statement in this document is backed by something executable. From the project root:
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 30%">Command</th>
+              <th>What it demonstrates</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>npm run verify</code></td>
+              <td>Typecheck, lint, determinism, <b>475 unit tests</b> with a 100% gate on
+                <code>src/domain</code>, and a production build</td>
+            </tr>
+            <tr>
+              <td><code>npm run e2e</code></td>
+              <td><b>58 Cypress specs</b> across seven journeys, zero retries, no
+                <code>cy.wait()</code> anywhere</td>
+            </tr>
+            <tr>
+              <td><code>npm run mutation-sanity</code></td>
+              <td>Four domain constants are flipped and the suite must go red — proof the tests
+                constrain behaviour rather than merely execute it</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ================================================== PART 5 -->
+      <section class="part" id="p5">
+        <div class="part-head">
+          <span class="part-num">PART 5</span>
+          <h2>Observability</h2>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 24%">Layer</th>
+              <th>Implementation</th>
+              <th style="width: 30%">Where you see it</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Correlation ids</b></td>
+              <td>Minted per request, <b>echoed by every handler</b></td>
+              <td>On the request and response log lines</td>
+            </tr>
+            <tr>
+              <td><b>Structured logging</b></td>
+              <td><code>{level, msg, at, correlationId, ...}</code>; warn/error as one-line JSON</td>
+              <td><code>docs/observability.md</code></td>
+            </tr>
+            <tr>
+              <td><b>Ring buffer + panel</b></td>
+              <td>Last 200 records via <code>useSyncExternalStore</code></td>
+              <td><b>Telemetry</b> button, or <code>Ctrl</code> + <code>`</code></td>
+            </tr>
+            <tr>
+              <td><b>Web Vitals</b></td>
+              <td><b>LCP, INP, CLS, FCP, TTFB</b> into the same log</td>
+              <td>Panel, <code>web_vital</code> entries</td>
+            </tr>
+            <tr>
+              <td><b>Error boundaries</b></td>
+              <td>Log <code>ui.render_error</code> with the component stack</td>
+              <td><code>ErrorBoundary.test.tsx</code></td>
+            </tr>
+            <tr>
+              <td><b>Fault injection</b></td>
+              <td><code>?__latency=400&amp;__errorRate=0.25</code></td>
+              <td>Every Nth write fails - reproducible</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>
+          Ids are <b>sequential, not <code>crypto.randomUUID()</code></b>, so a Cypress run is
+          reproducible and a spec can assert on a specific trace.
+        </p>
+        <p>
+          <b>In production</b> this is a transport swap: <code>logger</code>'s <code>emit</code> posts
+          to an OTLP collector or Sentry, and the correlation id becomes the trace id that joins the
+          browser span to the backend span.
+        </p>
+      </section>
+
+      <!-- ================================================== PART 6 -->
+      <section class="part" id="p6">
+        <div class="part-head">
+          <span class="part-num">PART 6</span>
+          <h2>How GenAI was used in the design phase</h2>
+        </div>
+        <p class="part-lede">
+          The implementation narrative is in the
+          <a href="README.md#ai-collaboration-narrative">README</a>. This section covers
+          <b>design</b>, where GenAI was used differently - and where its output required the most
+          scrutiny.
+        </p>
+
+        <h3>The judges were instructed to recompute, not merely to opine</h3>
+        <p>That produced concrete findings:</p>
+        <ul>
+          <li>
+            They recomputed every worked finance example and found arithmetic or formula errors in
+            all three proposals. One quoted a PCP payment of £328.14 where its own formula produced
+            £367.75. This work informed verification discipline even though the finance enhancement
+            was later removed from the MVP.
+          </li>
+          <li>
+            One judge identified that a proposed E2E strategy depended on <code>cy.request</code>
+            reaching MSW, which it cannot do because Cypress sends that request from its Node
+            process. That finding became §3.2 and changed the application's startup sequence.
+          </li>
+          <li>
+            A proposed frozen demonstration clock landed on a Sunday morning outside the configured
+            opening hours, which would have flattened the SLA countdowns the demo needed to show.
+          </li>
+        </ul>
+
+        <h3>Confident library claims were verified by execution</h3>
+        <p>
+          Two research findings proved false when the code ran:
+          <code>eslint-plugin-react-hooks@7.1.1</code>'s <code>recommended-latest</code> configuration
+          still used the legacy ESLint shape, and <code>jsdom@30</code> excluded Node 25. A third
+          assumption - that rendered <code>oklch()</code> contrast could be predicted reliably with a
+          naive sRGB conversion - failed near the gamut edge. In that case,
+          <code>cypress-axe</code> became the arbiter instead of the generated analysis.
+        </p>
+
+        <h3>The resulting division of labour was deliberate</h3>
+        <p>
+          GenAI was effective at breadth: enumerating UK motor-retail vocabulary, drafting realistic
+          seed data and generating exhaustive test cases. It was less reliable for arithmetic and
+          current library behaviour. The working rule therefore became: <b>let GenAI propose, then
+          require an independent mechanism to adjudicate.</b> The mutation sanity check,
+          accessibility gate, deterministic E2E contract and 144-pair pipeline table are retained
+          examples of that rule. The independent IRR oracle was another example and was retired with
+          the finance engine when the scope was reduced to the MVP.
+        </p>
+      </section>
+
+      <!-- ================================================== PART 7 -->
+      <section class="part" id="p7">
+        <div class="part-head">
+          <span class="part-num">PART 7</span>
+          <h2>Rollout</h2>
+        </div>
+        <p class="part-lede">
+          Turning the design above into backlog items: how the work reaches users, who does it, and
+          in what order it ships.
+        </p>
+
+        <h3>7.1 Rollout Strategy</h3>
+        <p>
+          This phase ships no production backend, so what follows is the plan for when the real API
+          lands. It is recorded now rather than later because the shape of a rollout is a design
+          decision — the cohort you expose first determines what the pilot can actually tell you.
+        </p>
+
+        <table>
+          <caption>
+            Staged rollout. Each stage has an explicit promotion test rather than a judgement call.
+          </caption>
+          <thead>
+            <tr>
+              <th style="width: 15%">Stage</th>
+              <th style="width: 22%">Cohort</th>
+              <th>Promote when — measured from the activity log the tool already keeps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>0 · Dogfood</b></td>
+              <td>Me plus one sales manager, on seeded data</td>
+              <td>All seven E2E journeys pass on real showroom hardware and a tablet</td>
+            </tr>
+            <tr>
+              <td><b>1 · Pilot site</b></td>
+              <td><b>One dealership, all of its executives</b> (~7% of users)</td>
+              <td>Speed-to-lead p90 no worse than the incumbent; zero leads unworked past 24 working
+                hours; no P1 defect; activity-logging rate above the old system's</td>
+            </tr>
+            <tr>
+              <td><b>2 · One brand</b></td>
+              <td>Every site of a single franchise brand</td>
+              <td>Stage 1 metrics hold at roughly 5× the volume; support contacts per user flat or
+                falling</td>
+            </tr>
+            <tr>
+              <td><b>3 · Group</b></td>
+              <td>All sites</td>
+              <td>Stage 2 metrics hold across every brand in the group</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>7.2 Resourcing</h3>
+
+        <h4>Resource allocation — one headcount</h4>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 20%">Responsibility</th>
+              <th style="width: 38%">Owns</th>
+              <th>What a separate person would normally catch</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Frontend</b></td>
+              <td>Three screens, the component layer, accessibility, theming</td>
+              <td>A designer noticing an unreadable colour; a second developer noticing business
+                logic leaking into a component</td>
+            </tr>
+            <tr>
+              <td><b>Backend (mocked)</b></td>
+              <td>Eight endpoints, the persistence seam, the seed generator, the error contract</td>
+              <td>A backend engineer refusing a contract that is awkward to implement for real</td>
+            </tr>
+            <tr>
+              <td><b>Automation testing</b></td>
+              <td>475 unit tests, 58 E2E specs, the coverage gate, the CI pipeline</td>
+              <td>A tester who did not write the code and therefore does not share its assumptions</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </body>
+</html>
