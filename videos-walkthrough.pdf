@@ -1,0 +1,71 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R /Annots [7 0 R 8 0 R 9 0 R] >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+6 0 obj
+<< /Length 1704 >>
+stream
+q 1 1 1 rg 0 0 595 842 re f Q
+0 0.56 0.58 rg BT /F2 8 Tf 1 0 0 1 52 784 Tm (KEYLOOP TECHNICAL ASSESSMENT) Tj ET
+0.09 0.14 0.16 rg BT /F2 25 Tf 1 0 0 1 52 742 Tm (Scenario C: Sales Lead) Tj ET
+0.09 0.14 0.16 rg BT /F2 25 Tf 1 0 0 1 52 712 Tm (Management Tool) Tj ET
+0.31 0.40 0.42 rg BT /F1 12 Tf 1 0 0 1 52 678 Tm (Videos Walkthrough) Tj ET
+q 0 0.56 0.58 RG 1.4 w 52 646 m 543 646 l S Q
+0.09 0.14 0.16 rg BT /F2 14 Tf 1 0 0 1 52 610 Tm (Walkthrough videos) Tj ET
+q 0.945 0.969 0.969 rg 0.78 0.84 0.85 RG 0.7 w 52 510 491 78 re B Q
+q 0 0.56 0.58 rg 84 565 14 14 re f Q
+1 1 1 rg BT /F2 9 Tf 1 0 0 1 88 569 Tm (1) Tj ET
+0.09 0.14 0.16 rg BT /F2 11 Tf 1 0 0 1 116 562 Tm (Part 1 - Introduction and System Design Overview) Tj ET
+0 0.43 0.45 rg BT /F1 8.5 Tf 1 0 0 1 116 538 Tm (https://www.loom.com/share/9a4823bbbd8143deb99cb9030dcfde60) Tj ET
+q 0.945 0.969 0.969 rg 0.78 0.84 0.85 RG 0.7 w 52 408 491 78 re B Q
+q 0 0.56 0.58 rg 84 463 14 14 re f Q
+1 1 1 rg BT /F2 9 Tf 1 0 0 1 88 467 Tm (2) Tj ET
+0.09 0.14 0.16 rg BT /F2 11 Tf 1 0 0 1 116 460 Tm (Part 2 - Using AI Collaboration) Tj ET
+0 0.43 0.45 rg BT /F1 8.5 Tf 1 0 0 1 116 436 Tm (https://www.loom.com/share/e51d92e408e748c7b04ede8e9804d7bf) Tj ET
+q 0.945 0.969 0.969 rg 0.78 0.84 0.85 RG 0.7 w 52 306 491 78 re B Q
+q 0 0.56 0.58 rg 84 361 14 14 re f Q
+1 1 1 rg BT /F2 9 Tf 1 0 0 1 88 365 Tm (3) Tj ET
+0.09 0.14 0.16 rg BT /F2 11 Tf 1 0 0 1 116 358 Tm (Part 3 - Demo + Lesson + Challenge) Tj ET
+0 0.43 0.45 rg BT /F1 8.5 Tf 1 0 0 1 116 334 Tm (https://www.loom.com/share/cc1418a858854e4faa236b026a23900e) Tj ET
+q 0.78 0.84 0.85 RG 0.7 w 52 210 m 543 210 l S Q
+0.31 0.40 0.42 rg BT /F1 8 Tf 1 0 0 1 52 188 Tm (Sales Center - Scenario C submission) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Annot /Subtype /Link /Rect [112 530 545 547] /Border [0 0 0] /A << /S /URI /URI (https://www.loom.com/share/9a4823bbbd8143deb99cb9030dcfde60) >> >>
+endobj
+8 0 obj
+<< /Type /Annot /Subtype /Link /Rect [112 428 545 445] /Border [0 0 0] /A << /S /URI /URI (https://www.loom.com/share/e51d92e408e748c7b04ede8e9804d7bf) >> >>
+endobj
+9 0 obj
+<< /Type /Annot /Subtype /Link /Rect [112 326 545 343] /Border [0 0 0] /A << /S /URI /URI (https://www.loom.com/share/cc1418a858854e4faa236b026a23900e) >> >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000279 00000 n 
+0000000349 00000 n 
+0000000424 00000 n 
+0000002180 00000 n 
+0000002353 00000 n 
+0000002526 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R /Info << /Title (Keyloop Technical Assessment - Scenario C Videos Walkthrough) /Author (Hau-Do) >> >>
+startxref
+2699
+%%EOF
